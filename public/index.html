@@ -1,0 +1,2981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- แก้ไข: เปลี่ยนชื่อ Title ของเบราว์เซอร์ -->
+  <title>CycleTime Tracker</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  
+  <style>
+    /* [แก้ไขใหม่] ขยายความกว้าง Modal บน iPad ให้ใช้พื้นที่ 95% ของจอ */
+    @media (max-width: 992px) {
+      .modal-xl {
+        max-width: 95%;
+        margin: 1rem auto;
+      }
+    }
+    
+    /* [แก้ไขใหม่] CSS สำหรับบีบองค์ประกอบให้อยู่ในบรรทัดเดียว (Compact Single-Line) */
+    .compact-row {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: 0.25rem !important; /* ลดระยะห่างระหว่างชิ้นส่วน */
+    }
+    .compact-input {
+      min-width: 0; /* หัวใจสำคัญ: อนุญาตให้ Input ถูกบีบขนาดได้เมื่อจอเล็ก */
+      flex: 1 1 auto; /* ให้พื้นที่เหลือตกเป็นของช่องกรอกชื่อ */
+    }
+    .compact-select {
+      min-width: 0;
+      flex: 0 1 120px; /* ขนาดตั้งต้นของ Dropdown แต่ยอมให้บีบได้ */
+      padding-left: 0.25rem;
+      padding-right: 1.5rem;
+    }
+    .compact-qty {
+      min-width: 0;
+      flex: 0 1 65px; /* ขนาดตั้งต้นของช่องกรอกตัวเลข */
+      padding-left: 0.25rem;
+      padding-right: 0.25rem;
+      text-align: center;
+    }
+    /* [เพิ่มใหม่] CSS สำหรับ Horizontal Scroll ใน Modal Master Data */
+    .master-routing-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch; /* ทำให้ iOS/iPad ปัดหน้าจอได้ลื่นไหล */
+      padding-bottom: 12px;
+    }
+    .master-routing-scroll::-webkit-scrollbar {
+      height: 8px;
+    }
+    .master-routing-scroll::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 4px;
+    }
+    .master-routing-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .master-routing-scroll::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    :root { 
+      --bg-light: #f8fafc; --bg-card: #ffffff; --bg-input: #ffffff; --bg-hover: #f1f5f9; 
+      --text-main: #1e293b; --text-muted: #64748b; 
+      --primary: #2563eb; --primary-hover: #1d4ed8; --success: #10b981; 
+      --warning: #f59e0b; --danger: #ef4444; --info: #0ea5e9; --purple: #8b5cf6; 
+      --border-color: #e2e8f0; 
+    }
+    body { font-family: 'Inter', sans-serif; background-color: var(--bg-light); display: grid; place-items: center; margin: 0; min-height: 100vh; color: var(--text-main); }
+    .app-container { width: 100%; max-width: 1280px; min-height: 720px; margin: 30px auto; padding: 3rem; background: var(--bg-light); border-radius: 24px; position: relative; }
+    .fade-in { animation: fadeIn 0.4s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    /* [เพิ่มใหม่] CSS Animation สำหรับ Option A: Continuous Pulse */
+    .pace-pulse {
+      animation: pacePulse 3s ease-in-out infinite;
+      display: inline-block;
+    }
+    @keyframes pacePulse {
+      0%, 100% { opacity: 0.65; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.03); }
+    }
+
+    .header-title { font-weight: 800; font-size: 2.2rem; color: var(--primary); margin-bottom: 2.5rem; text-align: center; letter-spacing: -0.5px; }
+    .header-title i { color: var(--primary); }
+    .form-control, .form-select, .input-group-text { background-color: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 12px; padding: 0.75rem 1.2rem; transition: all 0.3s ease; font-weight: 500; }
+    .form-control::placeholder { color: #94a3b8; font-weight: 400; }
+    .form-control:focus, .form-select:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15); }
+    .select2-container--bootstrap-5 .select2-selection { background-color: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 12px; min-height: 48px; font-weight: 500; }
+    .btn { border-radius: 12px; font-weight: 600; padding: 0.6rem 1.5rem; transition: all 0.2s; border: none; }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+    .btn-primary { background-color: var(--primary); color: #fff;}
+    .btn-success { background-color: var(--success); color: #fff;}
+    .btn-danger { background-color: var(--danger); color: #fff;}
+    .btn-info { background-color: var(--info); color: #fff;}
+    .btn-dark { background-color: var(--text-main); color: #fff;}
+    .btn-outline-secondary { color: var(--text-muted); border-color: var(--border-color); background: var(--bg-card); border: 1px solid var(--border-color); }
+    .btn-outline-success { color: var(--success); border-color: var(--success); background: transparent; border: 1px solid var(--success); }
+    .btn-outline-danger { color: var(--danger); border-color: var(--danger); background: transparent; border: 1px solid var(--danger); }
+    .btn-gemini { background: linear-gradient(135deg, #10b981, #34d399); color: white; }
+    .modern-panel { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+    .card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px; margin-bottom: 1.5rem; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+    .card-header { font-weight: 700; border-bottom: 1px solid var(--border-color); padding: 1.25rem; background-color: var(--bg-light); color: var(--text-main); }
+    .card-body { padding: 1.5rem; }
+    .station-list { display: flex; flex-direction: column; gap: 12px; }
+    .station-item { display: flex; align-items: center; background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 16px 20px; transition: all 0.2s ease; position: relative; overflow: hidden; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05); }
+    .station-item::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; }
+    .station-item.machine::before { background-color: var(--primary); } 
+    .station-item.manual::before { background-color: var(--warning); }  
+    .station-item.completed {
+      background-color: #ecfdf5 !important;
+      border: 2px solid #10b981 !important;
+    }
+    .station-item.completed::before { background-color: #059669 !important; }
+    .station-item.completed .station-seq {
+      background-color: #d1fae5 !important;
+      color: #047857 !important;
+      border-color: #a7f3d0 !important;
+    }
+    .station-item:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+    .drag-handle { color: #cbd5e1; font-size: 1.2rem; padding-right: 15px; cursor: grab; transition: color 0.2s; }
+    .drag-handle:active { cursor: grabbing; color: var(--primary); }
+    .station-seq { width: 36px; height: 36px; background-color: var(--bg-hover); color: var(--primary); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; margin-right: 15px; border: 1px solid var(--border-color); }
+    .station-content { flex-grow: 1; display: flex; flex-direction: column; gap: 4px; }
+    .station-name { font-size: 1.2rem; font-weight: 700; color: var(--text-main); margin: 0; line-height: 1.2; }
+    .station-actions { display: flex; gap: 8px; align-items: center; }
+    .btn-icon { background: var(--bg-hover); border: 1px solid var(--border-color); border-radius: 10px; padding: 8px 12px; transition: 0.2s; color: var(--text-muted); }
+    .btn-icon.edit { color: var(--warning); } 
+    .btn-icon.enter { color: var(--primary); background: rgba(37, 99, 235, 0.1); } 
+    .btn-icon.del { color: var(--danger); background: rgba(239, 68, 68, 0.1); }
+    .add-btn { background-color: var(--bg-card); color: var(--text-muted); border: 2px dashed #cbd5e1; }
+    .table { color: var(--text-main); --bs-table-bg: transparent; --bs-table-color: var(--text-main); border-color: var(--border-color); margin-bottom: 0; }
+    .table-light { background-color: var(--bg-light) !important; color: var(--text-muted) !important; font-weight: 600; }
+    .table-inputs input.form-control { background-color: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; padding: 6px; text-align: center; }
+    .total-ct-box { background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(37, 99, 235, 0.2)); border: 1px solid rgba(37, 99, 235, 0.3); }
+    #stopwatch-display { font-variant-numeric: tabular-nums; letter-spacing: 2px; font-size: 4rem; font-weight: 800; color: var(--primary); }
+    .chart-container { position: relative; width: 100%; height: 350px; }
+    .swal2-popup { border-radius: 20px !important; font-family: 'Inter', sans-serif; }
+    .swal2-title { color: var(--text-main) !important; font-weight: 700; }
+    @media (max-width: 992px) {
+      .app-container { margin: 10px auto !important; padding: 1.25rem !important; }
+      .header-title { font-size: 1.75rem !important; margin-bottom: 1.5rem !important; }
+      #stopwatch-display { font-size: 2.8rem !important; }
+      .station-item { padding: 12px 15px !important; }
+      .drag-handle { touch-action: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- [แก้ไข] ปรับ Header เพิ่มปุ่ม Home ไว้ซ้ายสุด และจัดให้อยู่บรรทัดเดียวกับ Title -->
+  <div class="position-relative w-100 d-flex justify-content-center align-items-center" style="margin-bottom: 2.5rem;">
+    <button class="btn btn-outline-primary position-absolute start-0 fw-bold shadow-sm" onclick="confirmGoHome()" title="Home / Refresh Data" style="z-index: 10;">
+      <i class="fa-solid fa-house me-md-2"></i><span class="d-none d-md-inline">Home</span>
+    </button>
+    <h3 class="header-title mb-0"><i class="fa-solid fa-stopwatch me-3"></i>CycleTime Tracker</h3>
+  </div>
+
+  <!-- SECTION 1: SELECTION -->
+  <div id="section-select" class="fade-in">
+    <div id="loading-config" class="text-center py-5 text-muted">
+      <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+      <h5 class="fw-bold">Connecting to Database...</h5>
+    </div>
+    
+    <div id="config-ready" class="d-none">
+      <div class="row g-4 mb-4">
+        <div class="col-md-12">
+          <div class="modern-panel h-100">
+            <label class="form-label fw-bold text-muted mb-3"><i class="fa-solid fa-layer-group me-2 text-primary"></i>Target Model</label>
+            <div class="d-flex gap-2">
+              <div class="flex-grow-1"><select id="model-select" class="form-select"></select></div>
+              <button class="btn btn-outline-success px-3 rounded-3" onclick="manageItem('add', 'Model')" title="Add Model"><i class="fa-solid fa-plus"></i></button>
+              <button class="btn btn-outline-danger px-3 rounded-3" onclick="manageItem('delete', 'Model')" title="Delete Model"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4 mb-4">
+        <div class="col-md-4">
+          <div class="modern-panel h-100 d-flex flex-column justify-content-center">
+            <label class="form-label fw-bold text-muted mb-3"><i class="fa-solid fa-table-cells-large me-2 text-info"></i>Cavity (Pieces/Panel)</label>
+            <input type="number" id="cavity-input" class="form-control form-control-lg text-center fw-bold fs-4 text-primary" value="1" min="1" onchange="updateCavityBackend()">
+          </div>
+        </div>
+        <div class="col-md-8">
+          <div class="modern-panel position-relative h-100 overflow-hidden">
+            <div class="position-absolute top-0 start-0 w-100 bg-primary" style="height: 4px;"></div>
+            <label class="form-label fw-bold text-main mb-3 mt-1">
+              <i class="fa-solid fa-folder-tree text-primary me-2"></i>Study Session Version
+            </label>
+            
+            <div class="mb-3">
+              <select id="existing-session-select" class="form-select border-primary text-primary fw-bold bg-primary bg-opacity-10">
+                <option value="">✨ Create New Version (Use settings below)</option>
+              </select>
+            </div>
+
+            <div class="row g-3" id="new-session-setup">
+              <div class="col-md-5">
+                <div class="btn-group w-100" role="group">
+                  <input type="radio" class="btn-check" name="study-type-radio" id="type-base" value="Base" checked>
+                  <label class="btn btn-outline-secondary fw-bold border-end-0" for="type-base"><i class="fa-solid fa-flag-checkered me-1"></i> Baseline</label>
+                  <input type="radio" class="btn-check" name="study-type-radio" id="type-imp" value="IMP">
+                  <label class="btn btn-outline-success fw-bold" for="type-imp"><i class="fa-solid fa-rocket me-1"></i> Kaizen</label>
+                </div>
+              </div>
+              <div class="col-md-7">
+                <div class="input-group">
+                  <span class="input-group-text border-end-0"><i class="fa-solid fa-pen"></i></span>
+                  <input type="text" id="session-name" class="form-control border-start-0 ps-0 text-center" placeholder="e.g. Morning Shift, Operator A">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <button class="btn btn-primary w-100 btn-lg mb-4 py-3 fw-bold fs-5 shadow-sm" onclick="goToLayout()">Proceed to Routing Setup <i class="fa-solid fa-arrow-right ms-2"></i></button>
+      <div class="row g-3">
+        <div class="col-12 d-flex gap-2">
+          <!-- แก้ไข 1: เปลี่ยนจาก btn-info (ฟ้า) เป็น btn-dark (ดำ) เพื่อสร้างน้ำหนักภาพที่น่าเชื่อถือ และไม่แย่งความเด่นจากปุ่ม Proceed -->
+          <button class="btn btn-dark text-white w-100 btn-lg py-3 fw-bold shadow-sm flex-fill" onclick="openMatrixSummary()"><i class="fa-solid fa-table-cells me-2"></i> Summary </button>
+          
+          <!-- แก้ไข 2: เปลี่ยนจาก btn-primary (น้ำเงิน) เป็น btn-secondary (เทา) เพื่อแสดงลำดับชั้นว่าเป็นเพียงปุ่มตั้งค่า (Secondary Action) -->
+          <button id="btn-master-management" class="btn btn-secondary text-white w-100 btn-lg py-3 fw-bold shadow-sm flex-fill d-none" onclick="openMasterManagement()" title="Master Data Management"><i class="fa-solid fa-cogs"></i> Master Data</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: MAIN STATIONS -->
+  <div id="section-layout" class="d-none fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <button class="btn btn-outline-secondary fw-bold px-4" onclick="backToSelect()"><i class="fa-solid fa-arrow-left me-2"></i> Back</button>
+      <div id="display-session-layout" class="badge bg-success px-3 py-2 fs-6 shadow-sm d-none"></div>
+    </div>
+
+    <div class="modern-panel text-center mb-4 bg-light border-0">
+      <div class="text-muted fw-bold mb-1 tracking-wider text-uppercase" style="font-size: 0.8rem;">Current Routing Flow</div>
+      <h3 class="fw-bold text-main mb-0">Model: <span id="display-model-layout" class="text-primary"></span></h3>
+    </div>
+    
+    <div class="d-flex justify-content-between align-items-end mb-3 px-2">
+      <h5 class="fw-bold text-main mb-0"><i class="fa-solid fa-route text-primary me-2"></i>Main Station Sequence</h5>
+      <span class="text-muted small"><i class="fa-solid fa-grip-vertical me-1"></i> Drag to reorder</span>
+    </div>
+
+    <div id="main-station-container" class="station-list"></div>
+    <div class="mt-4"><button class="btn add-btn w-100 py-3 rounded-4 fw-bold fs-6" onclick="promptAddMainStation()"><i class="fa-solid fa-plus me-2"></i>Add Main Station</button></div>
+  </div>
+
+  <!-- SECTION 3: SUB STATIONS -->
+  <div id="section-sub-layout" class="d-none fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <button class="btn btn-outline-secondary fw-bold px-4" onclick="backToMainLayout()"><i class="fa-solid fa-arrow-left me-2"></i> Back to Main</button>
+    </div>
+
+    <div class="modern-panel text-center mb-4 border-0" style="background-color: var(--bg-hover);">
+      <div class="text-muted fw-bold mb-1 tracking-wider text-uppercase" style="font-size: 0.8rem;">Managing Sub-Stations For</div>
+      <h2 class="fw-bold text-primary mb-0" id="display-main-station-name"></h2>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-end mb-3 px-2">
+      <h5 class="fw-bold text-main mb-0"><i class="fa-solid fa-list-ol text-info me-2"></i>Sub-Stations</h5>
+      <span class="text-muted small"><i class="fa-solid fa-grip-vertical me-1"></i> Drag to reorder</span>
+    </div>
+
+    <div id="sub-station-container" class="station-list"></div>
+    <div class="mt-4"><button class="btn add-btn w-100 py-3 rounded-4 fw-bold fs-6" onclick="promptAddSubStation()"><i class="fa-solid fa-plus me-2"></i>Add Sub-Station</button></div>
+  </div>
+
+  <!-- SECTION 4: TIME STUDY FORM (Simplified) -->
+  <div id="section-form" class="d-none fade-in">
+    <button class="btn btn-outline-secondary fw-bold mb-4 px-4" onclick="backToSubLayout()"><i class="fa-solid fa-arrow-left me-2"></i> Back to Sub-stations</button>
+    
+    <div class="card border-0 rounded-4 overflow-hidden shadow">
+      <div class="p-4 position-relative bg-light border-bottom">
+        <div class="d-flex justify-content-between align-items-start position-relative z-1">
+          <div>
+            <div class="text-muted fw-bold small mb-1 tracking-wider text-uppercase">Data Entry Workcell</div>
+            <h2 class="mb-0 fw-bold text-primary" id="display-station"></h2>
+            <div class="mt-2 text-muted fw-medium">
+              Model: <span id="display-model-form" class="text-main fw-bold me-3"></span>
+              <!-- [แก้ไข] แสดง Line และปุ่ม Edit -->
+              <span class="badge bg-primary bg-opacity-10 text-primary border border-primary p-2 fs-6" id="display-line-badge" style="cursor: pointer;" onclick="promptEditCurrentLine()" title="Click to edit Line">
+                <i class="fa-solid fa-location-dot me-1"></i> Line: <span id="display-line-form" class="fw-bold">-</span>
+                <i class="fa-solid fa-pen ms-2 small"></i>
+              </span>
+            </div>
+          </div>
+          <div class="text-end">
+            <span class="badge bg-primary text-white px-3 py-2 shadow-sm">CT Divisor: <span id="display-cavity" class="fw-bold"></span> pcs</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card-body p-4 bg-white">
+        
+        <!-- [เพิ่มใหม่] 1. ช่องกรอกชื่อ Operator และ Checker -->
+        <div class="row g-3 mb-4 modern-panel border-0 bg-light p-3">
+          <div class="col-md-6">
+            <label class="form-label fw-bold text-muted small mb-1"><i class="fa-solid fa-user text-primary me-1"></i> Operator Name <span class="text-danger">*</span></label>
+            <input type="text" id="operator-name" class="form-control fw-bold border-primary" placeholder="e.g. Somchai" oninput="saveDraftCache()">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold text-muted small mb-1"><i class="fa-solid fa-user-check text-success me-1"></i> Checker Name <span class="text-danger">*</span></label>
+            <input type="text" id="checker-name" class="form-control fw-bold border-success" placeholder="e.g. Peter" oninput="saveDraftCache()">
+          </div>
+        </div>
+        <!-- ============================================== -->
+        <div class="row align-items-center modern-panel mb-4 border-0 bg-light">
+          <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
+            <div class="d-inline-flex align-items-center">
+              <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-circle me-4 shadow-sm">
+                <i class="fa-solid fa-stopwatch fa-3x"></i>
+              </div>
+              <div>
+                <div class="text-muted fw-bold small text-uppercase tracking-wider">Live Timer</div>
+                <div id="stopwatch-display">0.00</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6 text-center text-md-end">
+            <button id="btn-stopwatch-toggle" class="btn btn-primary fw-bold px-4 py-3 btn-lg me-2 shadow-sm" onclick="toggleStopwatch()">
+              <i class="fa-solid fa-play me-2"></i> Start Timer
+            </button>
+            <button class="btn btn-outline-secondary fw-bold px-4 py-3 bg-white" onclick="resetStopwatch()">
+              <i class="fa-solid fa-rotate-left"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3 px-1">
+          <h5 class="mb-0 text-main fw-bold"><i class="fa-solid fa-table-list text-primary me-2"></i> 10-Round Observation Table</h5>
+          <div>
+            <!-- [เพิ่มใหม่] ปุ่ม Pull Data (จะถูกซ่อนอัตโนมัติถ้ามีข้อมูลแล้ว) -->
+            <button id="btn-pull-data" class="btn btn-sm btn-info text-white fw-bold rounded-3 px-3 py-2 shadow-sm me-2 d-none" onclick="promptPullData()">
+              <i class="fa-solid fa-download me-1"></i> Pull Data
+            </button>
+            <button class="btn btn-sm btn-outline-danger fw-bold rounded-3 px-3 py-2 shadow-sm" onclick="clearTableData()">
+              <i class="fa-solid fa-trash-can me-1"></i> Clear Table
+            </button>
+          </div>
+        </div>
+
+        <div class="table-responsive bg-white border rounded-4 mb-4 shadow-sm">
+          <table class="table table-hover align-middle table-inputs mb-0">
+            <thead class="table-light text-center small text-uppercase tracking-wider border-bottom">
+                <tr>
+                    <th style="width: 10%;">Round</th>
+                    <th style="color: var(--primary); width: 40%;">Cycle Time (sec)</th>
+                    <th style="width: 50%;">Remark</th>
+                </tr>
+            </thead>
+            <tbody id="cycle-table-body" class="border-top-0"></tbody>
+          </table>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-12 mt-3">
+            <div class="p-4 rounded-4 text-center total-ct-box shadow-sm">
+              <div class="fw-bold text-primary text-uppercase tracking-wider mb-2"><i class="fa-solid fa-calculator me-2"></i>Average Cycle Time per Piece (sec/pcs)</div>
+              <div id="total-cycle" class="display-4 text-main fw-black">0.00</div>
+            </div>
+          </div>
+        </div>
+        <button id="btn-submit" class="btn btn-success w-100 py-3 btn-lg fw-bold fs-5 shadow-sm" onclick="submitData()"><i class="fa-solid fa-cloud-arrow-up me-2"></i> Submit to Database</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- SECTION 5: DASHBOARD (ฉบับสมบูรณ์ 1 ชุด) -->
+  <!-- ========================================== -->
+  <div id="section-dashboard" class="d-none fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <button class="btn btn-outline-secondary fw-bold px-4" onclick="backToSelectFromDashboard()"><i class="fa-solid fa-arrow-left me-2"></i> Back</button>
+      <div class="d-flex gap-2 align-items-center">
+        <!-- ตัวกรอง Line -->
+        <select id="dashboard-line-select" class="form-select form-select-sm border-info text-dark fw-bold" style="min-width: 120px;" onchange="changeDashboardFilter()">
+           <option value="ALL">All Lines</option>
+        </select>
+        <!-- ตัวกรอง Session (Multi-select) -->
+        <select id="dashboard-session-select" class="form-select form-select-sm border-primary text-primary fw-bold" multiple="multiple"></select>
+        
+        <button class="btn btn-success px-4 rounded-pill shadow-sm fw-bold" onclick="exportToExcel()">
+          <i class="fa-solid fa-file-excel me-2"></i> Export .xlsx
+        </button>
+      </div>
+    </div>
+    
+    <div class="modern-panel mb-4 bg-warning bg-opacity-10 border-warning">
+      <h6 class="fw-bold text-warning mb-3"><i class="fa-solid fa-calculator me-2"></i>Takt Time Calculator (Auto-Update Chart)</h6>
+      <div class="row g-3 align-items-center">
+        <div class="col-md-3">
+          <label class="form-label text-muted small fw-bold mb-1">Monthly Forecast (pcs)</label>
+          <input type="number" id="takt-forecast" class="form-control border-warning" placeholder="e.g. 20000" oninput="calculateTaktTime()">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label text-muted small fw-bold mb-1">Working Days</label>
+          <input type="number" id="takt-days" class="form-control border-warning" placeholder="e.g. 22" oninput="calculateTaktTime()">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label text-muted small fw-bold mb-1">Working Hours/Day</label>
+          <input type="number" id="takt-hours" class="form-control border-warning" placeholder="e.g. 7" value="7" oninput="calculateTaktTime()">
+        </div>
+        <div class="col-md-3 text-center">
+          <div class="bg-white p-2 rounded-3 shadow-sm border">
+            <span class="d-block text-muted fw-bold small">Takt Time</span>
+            <h3 class="mb-0 text-warning fw-black" id="display-takt-time">-</h3>
+            <small class="text-muted" style="font-size:0.7rem;">sec/pcs</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="insight-metrics" class="row g-4 mb-4 d-none">
+      <!-- Card 1: Line Output (UPH) -->
+      <div class="col-md-4">
+        <div class="card h-100 border-0 position-relative shadow-sm">
+          <div class="position-absolute top-0 bottom-0 start-0 bg-primary" style="width: 4px;"></div>
+          <div class="card-body p-4 ms-2">
+            <h6 class="text-muted fw-bold text-uppercase tracking-wider mb-2" style="font-size:0.8rem;"><i class="fa-solid fa-arrow-trend-up me-2"></i> Line Output (UPH)</h6>
+            <div class="d-flex align-items-end gap-2 mt-3">
+              <h1 id="uph-base" class="text-main mb-0 fw-black display-5">0</h1><span class="text-muted fw-bold mb-2">pcs/hr</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Card 2: Bottleneck Station -->
+      <div class="col-md-4">
+        <div class="card h-100 border-0 position-relative shadow-sm">
+          <div class="position-absolute top-0 bottom-0 start-0 bg-danger" style="width: 4px;"></div>
+          <div class="card-body p-4 ms-2">
+            <h6 class="text-muted fw-bold text-uppercase tracking-wider mb-2" style="font-size:0.8rem;"><i class="fa-solid fa-triangle-exclamation me-2"></i> Bottleneck Station</h6>
+            <div class="d-flex align-items-center gap-2 mt-3">
+              <h4 id="bn-base" class="text-danger mb-0 fw-bold">-</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Card 3: Capacity Estimate -->
+      <div class="col-md-4">
+        <div class="card h-100 border-0 position-relative shadow-sm">
+          <div class="position-absolute top-0 bottom-0 start-0 bg-success" style="width: 4px;"></div>
+          <div class="card-body p-4 ms-2">
+            <h6 class="text-muted fw-bold text-uppercase tracking-wider mb-2" style="font-size:0.8rem;"><i class="fa-solid fa-boxes-stacked me-2"></i> Capacity Estimate</h6>
+            <div class="d-flex align-items-end gap-2 mt-3">
+              <h2 id="cap-base" class="text-success mb-0 fw-bold display-6">0</h2><span class="text-muted fw-bold mb-1">pcs/shift</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Card 4: Line Efficiency -->
+      <div class="col-md-6">
+        <div class="card h-100 border-0 position-relative shadow-sm">
+          <div class="position-absolute top-0 bottom-0 start-0 bg-info" style="width: 4px;"></div>
+          <div class="card-body p-3 ms-2">
+            <h6 class="text-muted fw-bold text-uppercase tracking-wider mb-2" style="font-size:0.8rem;"><i class="fa-solid fa-percent me-2"></i> Line Efficiency (Line Balance)</h6>
+            <div class="progress mt-3 mb-1" style="height: 28px; border-radius: 8px; background-color: var(--bg-hover);">
+              <div id="eff-progress" class="progress-bar bg-info fw-bold fs-6" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Card 5: Total Loss Time -->
+      <div class="col-md-6">
+        <div class="card h-100 border-0 position-relative shadow-sm">
+          <div class="position-absolute top-0 bottom-0 start-0 bg-warning" style="width: 4px;"></div>
+          <div class="card-body p-3 ms-2">
+            <h6 class="text-muted fw-bold text-uppercase tracking-wider mb-2" style="font-size:0.8rem;"><i class="fa-solid fa-stopwatch-20 me-2"></i> Total Loss Time</h6>
+            <div class="d-flex align-items-end gap-2 mt-2">
+              <h2 id="loss-base" class="text-warning mb-0 fw-bold display-6">0</h2><span class="text-muted fw-bold mb-1">sec</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4 border-0 shadow-sm">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center p-4 border-bottom">
+        <span class="fs-5 fw-bold"><i class="fa-solid fa-chart-column me-2 text-primary"></i>Total Cycle Time Summary</span>
+        <span class="badge bg-primary px-3 py-2 fs-6 shadow-sm" id="db-model-title">Model</span>
+      </div>
+      <div class="card-body p-4"><div class="chart-container"><canvas id="localSummaryChart"></canvas></div></div>
+    </div>
+
+    <div class="card border-0 mb-5 shadow-sm">
+      <div class="card-header bg-white fw-bold border-bottom p-4 fs-5"><i class="fa-solid fa-table me-2 text-primary"></i>Cycle Time Data Table</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 text-center align-middle border-0" id="export-table">
+            <thead class="table-light text-uppercase small tracking-wider border-bottom">
+              <tr>
+                <th class="py-3 text-start ps-4">Main Station</th>
+                <th class="py-3 text-start">Sub Station</th>
+                <th class="py-3 text-primary bg-primary bg-opacity-10 border-0">Cycle Time (s)</th>
+              </tr>
+            </thead>
+            <tbody id="dashboard-table-body" class="fw-medium border-0"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- สิ้นสุด SECTION 5: DASHBOARD -->
+
+  <!-- ======================================================= -->
+  <!-- [แก้ไขตำแหน่ง] นำ SECTION 6 มาไว้ด้านใน app-container ที่นี่ -->
+  <!-- ======================================================= -->
+  <!-- SECTION 6: SUMMARY MATRIX -->
+  <div id="section-matrix" class="d-none fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <button class="btn btn-outline-secondary fw-bold px-4" onclick="backToSelectFromMatrix()"><i class="fa-solid fa-arrow-left me-2"></i> Back</button>
+      <div class="d-flex gap-2">
+        <!-- [เพิ่มใหม่] ปุ่ม Archive สีเหลือง (จะแสดงเฉพาะ Staff) -->
+        <button id="btn-archive-data" class="btn btn-warning text-dark fw-bold px-4 rounded-pill shadow-sm d-none" onclick="promptArchiveData()">
+          <i class="fa-solid fa-box-archive me-2"></i> Archive Old Data
+        </button>
+        <button class="btn btn-success px-4 rounded-pill shadow-sm fw-bold" onclick="exportMatrixToExcel()">
+          <i class="fa-solid fa-file-excel me-2"></i> Export Data
+        </button>
+      </div>
+    </div>
+
+    <!-- ส่วนตัวกรองข้อมูล (Filter) -->
+    <div class="modern-panel mb-4">
+      <h6 class="fw-bold text-main mb-3"><i class="fa-solid fa-filter text-info me-2"></i> Data Filter & Archive Viewer</h6>
+      
+      <div class="row g-3 mb-3">
+        <div class="col-md-4">
+          <label class="form-label text-muted small fw-bold mb-1"><i class="fa-solid fa-database text-warning me-1"></i> Data Source</label>
+          <select id="filter-archive-source" class="form-select border-warning bg-warning bg-opacity-10 text-dark fw-bold" onchange="changeArchiveSource()">
+             <option value="ACTIVE">🟢 Current Data (Last 3 Months)</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label text-muted small fw-bold mb-1">Model</label>
+          <!-- [แก้ไข] เพิ่ม multiple="multiple" -->
+          <select id="filter-model" class="form-select border-info" multiple="multiple"></select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label text-muted small fw-bold mb-1">Session Version</label>
+          <!-- [แก้ไข] เพิ่ม multiple="multiple" -->
+          <select id="filter-session" class="form-select border-info" multiple="multiple"></select>
+        </div>
+      </div>
+      
+      <div class="row g-3">
+        <div class="col-md-6">
+          <!-- [แก้ไข] เปลี่ยนชื่อเป็น Month และเพิ่ม multiple="multiple" -->
+          <label class="form-label text-muted small fw-bold mb-1">Month</label>
+          <select id="filter-date" class="form-select border-info" multiple="multiple"></select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label text-muted small fw-bold mb-1">Line <span class="badge bg-primary ms-1 small">New</span></label>
+          <!-- [แก้ไข] เพิ่ม multiple="multiple" -->
+          <select id="filter-line" class="form-select border-info" multiple="multiple"></select>
+        </div>
+      </div>
+    </div>
+
+    <!-- แผงแสดงข้อมูลแบบ ยุบ/ขยาย (Accordion) -->
+    <div class="card border-0 mb-5 shadow-sm bg-transparent">
+      <div class="card-header bg-white fw-bold border-bottom p-4 fs-5 rounded-top-4 mb-3">
+        <i class="fa-solid fa-table-cells me-2 text-info"></i>Cycle Time Summary Matrix
+      </div>
+      <div class="card-body p-0">
+        <!-- คอนเทนเนอร์สำหรับ Accordion จะถูกสร้างโดย Javascript -->
+        <div class="accordion" id="matrixAccordion"></div>
+      </div>
+    </div>
+  </div>
+  <!-- สิ้นสุด SECTION 6 -->
+<!-- SECTION: MASTER DATA MANAGEMENT -->
+<div id="section-master-data" class="container py-4 d-none">
+  <div class="modern-panel mb-4 d-flex justify-content-between align-items-center shadow-sm flex-wrap gap-3">
+    <div>
+      <h3 class="fw-bold text-main mb-1"><i class="fa-solid fa-cogs text-primary me-2"></i> Master Data Management</h3>
+      <!-- [แก้ไข] เปลี่ยนข้อความอธิบายเป็นภาษาอังกฤษ -->
+      <small class="text-muted">Manage Master Models, Cavities, and Process Flow Sequences</small>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+       <!-- [เพิ่มใหม่] ช่องค้นหา Real-time Filter ค้นหาชื่อ Model พร้อมปุ่มล้างค่า (X) -->
+       <div class="input-group" style="width: 260px;">
+         <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+         <input type="text" id="master-search-input" class="form-control border-start-0 border-end-0 ps-0 fw-semibold" placeholder="Search Model..." oninput="filterMasterDataTable()">
+         <button class="btn btn-outline-secondary border-start-0 bg-white text-muted d-none" type="button" id="btn-clear-master-search" onclick="clearMasterSearch()" title="Clear search">
+           <i class="fa-solid fa-xmark"></i>
+         </button>
+       </div>
+       <button class="btn btn-secondary me-1 px-4 rounded-pill" onclick="closeMasterManagement()">Back</button>
+       <button class="btn btn-primary fw-bold px-4 rounded-pill shadow-sm" onclick="openMasterModal()">+ Create New Master</button>
+    </div>
+  </div>
+  <div class="modern-panel shadow-sm p-0 overflow-hidden">
+     <div class="table-responsive">
+       <table class="table table-hover align-middle mb-0 text-center">
+          <thead class="table-light text-muted small tracking-wider border-bottom">
+             <tr>
+                <!-- [แก้ไข] ลบคอลัมน์ LINE ออกตาม Option A (Clean UI) -->
+                <th class="py-3">MODEL NAME</th><th class="py-3">CAVITY</th><th class="py-3 text-start ps-4">ROUTING FLOW SUMMARY</th><th class="py-3">ACTIONS</th>
+             </tr>
+          </thead>
+          <tbody id="master-data-tbody" class="bg-white border-0"></tbody>
+       </table>
+     </div>
+  </div>
+</div>
+
+<!-- MODAL: MASTER DATA FORM -->
+<div class="modal fade" id="masterDataModal" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content rounded-4 border-0 shadow-lg">
+      <div class="modal-header border-bottom-0 pb-0 px-4 pt-4">
+        <h4 class="modal-title fw-bold text-main" id="masterModalTitle">Create New Master Model</h4>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-4">
+         <div class="row g-3 mb-4">
+            <div class="col-md-9">
+               <label class="form-label fw-bold small text-muted mb-1">MODEL NAME *</label>
+               <input type="text" id="master-model" class="form-control form-control-lg fw-bold text-primary border-primary" placeholder="Model Name" style="text-transform: uppercase;">
+            </div>
+            <div class="col-md-3">
+               <label class="form-label fw-bold small text-muted mb-1">CAVITY</label>
+               <input type="number" id="master-cavity" class="form-control form-control-lg fw-bold" value="1" min="1">
+            </div>
+         </div>
+         <div class="modern-panel bg-light bg-opacity-50 border p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+               <div>
+                 <h6 class="fw-bold mb-0 text-dark">Routing Sequence Setup</h6>
+                 <small class="text-muted">Define main stations and sub stations</small>
+               </div>
+               <button class="btn btn-sm btn-primary fw-bold px-3 rounded-pill" onclick="masterAddMain()">+ Add Main Station</button>
+            </div>
+            <div id="master-routing-container" class="master-routing-scroll"></div>
+         </div>
+      </div>
+      <div class="modal-footer border-top-0 pt-0 px-4 pb-4">
+        <button type="button" class="btn btn-light fw-bold px-4 rounded-pill" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary fw-bold px-5 rounded-pill shadow-sm" onclick="saveMasterData()">Save Master</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <!-- [แก้ไขใหม่] ใส่คลาส pace-pulse เพื่อเปิดใช้งาน Animation จังหวะหายใจ -->
+  <div class="text-center mt-5 pt-4 border-top text-muted small fw-bold tracking-wider">
+    <span class="pace-pulse">
+      <i class="fa-solid fa-bolt text-warning me-1"></i> Powered by PACE TEAM
+    </span>
+  </div>
+
+</div> <!-- แท็กปิดของ app-container ต้องอยู่หลังทุกๆ Section เสมอ -->
+
+<script>
+// ตัวแปลงคำสั่ง google.script.run เดิม ให้ยิง API เข้าหา Node.js + MySQL อัตโนมัติ (ฉบับแก้ไข)
+function createGasRunner(onSuccess = () => {}, onFailure = (err) => console.error(err)) {
+  return new Proxy({}, {
+    get(_, prop) {
+      if (prop === 'withSuccessHandler') {
+        return (fn) => createGasRunner(fn, onFailure);
+      }
+      if (prop === 'withFailureHandler') {
+        return (fn) => createGasRunner(onSuccess, fn);
+      }
+
+      return function(...args) {
+        const callApi = async (url, options = {}) => {
+          const res = await fetch(url, {
+            headers: { 'Content-Type': 'application/json' },
+            ...options
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || data.error || 'Server Error');
+          return data;
+        };
+
+        let promise;
+        switch (prop) {
+          case 'getInitialConfig':
+            promise = callApi('/api/initial-config').then(res => {
+              res.lastModel = localStorage.getItem('TS_LAST_MODEL') || '';
+              res.lastLine = localStorage.getItem('TS_LAST_LINE') || '';
+              return res;
+            });
+            break;
+          case 'saveLastState':
+            if (args[0]) localStorage.setItem('TS_LAST_LINE', args[0]);
+            if (args[1]) localStorage.setItem('TS_LAST_MODEL', args[1]);
+            promise = Promise.resolve({ success: true });
+            break;
+          case 'updateModelConfig':
+            promise = callApi('/api/update-model-config', {
+              method: 'POST',
+              body: JSON.stringify({ line: args[0], model: args[1], cavity: args[2], routingArray: args[3] })
+            });
+            break;
+          case 'manageConfigItem':
+            promise = callApi('/api/manage-config', {
+              method: 'POST',
+              body: JSON.stringify({ action: args[0], type: args[1], line: args[2], value: args[3] })
+            });
+            break;
+          case 'getMasterDataList':
+            promise = callApi('/api/master');
+            break;
+          case 'saveMasterModelData':
+            promise = callApi('/api/master', {
+              method: 'POST',
+              body: JSON.stringify({ oldModelName: args[0], line: args[1], model: args[2], cavity: args[3], routingStr: args[4] })
+            });
+            break;
+          case 'deleteMasterModelData':
+            promise = callApi(`/api/master/${encodeURIComponent(args[0])}`, { method: 'DELETE' });
+            break;
+          case 'getCompletedStations':
+            promise = callApi(`/api/completed-stations?model=${encodeURIComponent(args[0] || '')}&sessionTag=${encodeURIComponent(args[1] || '')}`);
+            break;
+          case 'getAvailablePullData':
+            promise = callApi(`/api/pull-data?stationName=${encodeURIComponent(args[0] || '')}&excludeModel=${encodeURIComponent(args[1] || '')}&excludeSession=${encodeURIComponent(args[2] || '')}`);
+            break;
+          case 'saveTimeStudyDataFlat':
+            promise = callApi('/api/time-study', {
+              method: 'POST',
+              body: JSON.stringify(args[0])
+            });
+            break;
+          case 'getDashboardData':
+            promise = callApi('/api/dashboard', {
+              method: 'POST',
+              body: JSON.stringify({ modelName: args[0], lineName: args[1], targetSessionTags: args[2], archiveId: args[3] })
+            });
+            break;
+          case 'getAllMatrixSummaryData':
+            promise = callApi('/api/matrix');
+            break;
+          case 'getArchiveList':
+            promise = Promise.resolve([]);
+            break;
+          case 'runArchiveProcess':
+            promise = Promise.resolve({ success: true, message: 'ระบบอยู่บน MySQL แล้ว ไม่จำเป็นต้อง Archive แยกไฟล์ครับ' });
+            break;
+          case 'generateExcelExport':
+            promise = callApi('/api/export/dashboard', {
+              method: 'POST',
+              body: JSON.stringify({ data: args[0], model: args[1], line: args[2], taktTime: args[3] })
+            });
+            break;
+          case 'generateMatrixExcelExport':
+            promise = callApi('/api/export/matrix', {
+              method: 'POST',
+              body: JSON.stringify({ data: args[0] })
+            });
+            break;
+          default:
+            promise = Promise.reject(new Error(`Unknown API method: ${String(prop)}`));
+        }
+
+        promise.then(onSuccess).catch(onFailure);
+      };
+    }
+  });
+}
+
+window.google = {
+  script: {
+    run: createGasRunner()
+  }
+};
+</script>
+<script>
+  let allLineModelMap = {}; let allModelRoutings = {}; let allModelCavities = {};
+  let allModelSessions = {}; 
+  let currentRouting = []; 
+  let currentMainIndex = -1;
+  // [เพิ่มใหม่] ตัวแปรจัดการ SortableJS ในหน้า Master Data
+  let masterMainSortableInstance = null;
+  let masterSubSortableInstances = [];
+  // [เพิ่มใหม่] ตัวแปรเก็บรายการ Master Data ทั้งหมด เพื่อใช้กรอง Real-time Filter ฝั่ง Client-side
+  let allMasterDataList = [];
+  let currentModel = "", currentLine = "", currentStation = "", currentCavity = 1, webChartInstance = null;
+  let currentDashboardData = []; 
+  let currentSessionTag = "";
+  let currentDashboardCavity = 1; 
+  let mainSortableInstance = null;
+  let subSortableInstance = null;
+  let currentEffCavity = 1;
+  let stopwatchStartTime = 0; let stopwatchElapsedTime = 0; let isStopwatchRunning = false; let stopwatchAnimationFrame;
+  let globalAvailableSheets = []; 
+  let isStaffMode = false; 
+  let isNavigatedFromMatrix = false;
+
+  let currentRound = 1;
+  let lastLapTime = 0;
+
+  const swalModern = Swal.mixin({
+    customClass: { confirmButton: 'btn btn-primary px-4 shadow-sm', cancelButton: 'btn btn-outline-secondary px-4', input: 'form-control' },
+    buttonsStyling: false
+  });
+
+  document.addEventListener("DOMContentLoaded", () => { loadInitialData(); });
+  
+  function loadInitialData() {
+    google.script.run
+      .withSuccessHandler(function(res) {
+        document.getElementById("loading-config").classList.add("d-none");
+        document.getElementById("config-ready").classList.remove("d-none");
+        
+        isStaffMode = res.isStaff; 
+        applyRoleRestrictions();   
+        allModelRoutings = res.modelRoutingMap;
+        allModelCavities = res.modelCavityMap || {}; 
+        allModelSessions = res.modelSessionMap || {}; 
+        
+        if ($('#model-select').hasClass("select2-hidden-accessible")) $('#model-select').select2('destroy');
+        
+        $('#model-select').empty().append('<option value="">-- Type to search Model --</option>');
+        
+        let allModels = Object.keys(allModelRoutings).sort();
+        allModels.forEach(m => {
+          if(m && m !== "-") { $('#model-select').append(new Option(m, m)); }
+        });
+        
+        $('#model-select').select2({ theme: 'bootstrap-5', width: '100%', placeholder: '-- Type to search Model --' });
+
+        $('#model-select').on('change', function() {
+          var selectedModel = $(this).val();
+          if (selectedModel && allModelCavities[selectedModel] !== undefined) {
+            document.getElementById("cavity-input").value = allModelCavities[selectedModel];
+          } else { document.getElementById("cavity-input").value = 1; }
+          
+          let existingSelect = $('#existing-session-select');
+          existingSelect.empty();
+          existingSelect.append(new Option("✨ Create New Version (Use settings below)", ""));
+          
+          if (selectedModel && allModelSessions[selectedModel]) {
+            // [แก้ไข] จำกัดการแสดงผลเฉพาะ 5 Session ล่าสุดเพื่อแก้ปัญหา UI รก
+            let sessions = [...allModelSessions[selectedModel]].reverse().slice(0, 5);
+            sessions.forEach(tag => {
+              existingSelect.append(new Option(`🔄 Continue: ${tag}`, tag));
+            });
+          }
+        });
+
+        $(document).on('change', '#existing-session-select', function() {
+           if($(this).val() !== "") {
+               $('#new-session-setup').css('opacity', '0.4').css('pointer-events', 'none');
+           } else {
+               $('#new-session-setup').css('opacity', '1').css('pointer-events', 'auto');
+           }
+        });
+
+        if (res.lastModel) {
+          setTimeout(() => { 
+            let cleanModel = res.lastModel.trim();
+            if (cleanModel && cleanModel !== "-" && $('#model-select option[value="' + cleanModel + '"]').length > 0) {
+              $('#model-select').val(cleanModel).trigger('change.select2').trigger('change'); 
+            }
+          }, 100);
+        }
+      })
+      .withFailureHandler(function(err) {
+        document.getElementById("loading-config").innerHTML = `<div class="text-danger fw-bold"><i class="fa-solid fa-triangle-exclamation fa-2x mb-2"></i><br>Database Connection Failed:<br>${err.message}</div>`;
+      })
+      .getInitialConfig();
+  }
+
+  let completedStations = []; 
+
+  function applyRoleRestrictions() {
+    if (!isStaffMode) {
+      $('.btn-outline-success, .btn-outline-danger').filter('[title*="Model"]').addClass('d-none');
+      $('button[onclick="openMatrixSummary()"]').parent().addClass('d-none'); 
+      $('#cavity-input').closest('.col-md-4').addClass('d-none');
+      $('.col-md-8').removeClass('col-md-8').addClass('col-md-12');
+      $('#type-imp').next('label').addClass('d-none');
+      $('#type-base').next('label').addClass('d-none');
+      $('#session-name').attr('placeholder', 'Enter Remark / Session Info...'); 
+      $('#type-base').closest('.col-md-5').addClass('d-none');
+      $('#session-name').closest('.col-md-7').removeClass('col-md-7').addClass('col-12');
+      $('.add-btn').addClass('d-none');
+    } else {
+      // [เพิ่มใหม่] เรียกฟังก์ชันเพื่อแสดงปุ่ม Master Data สำหรับ Staff
+      checkMasterPermission();
+      // [เพิ่มใหม่] โชว์ปุ่ม Archive ให้ Staff
+      document.getElementById('btn-archive-data').classList.remove('d-none');
+    }
+  }
+
+  function manageItem(action, type) { 
+    if (action === 'add') {
+      swalModern.fire({
+        title: `Add New Model`,
+        html: `<input id="swal-m" class="form-control text-center fw-bold" placeholder="Model Name" style="text-transform: uppercase;">`,
+        showCancelButton: true, confirmButtonText: 'Save',
+        preConfirm: () => {
+          let m = document.getElementById('swal-m').value.trim().toUpperCase();
+          if(!m) Swal.showValidationMessage('Model name is required');
+          return { model: m };
+        }
+      }).then((res) => {
+        if(res.isConfirmed) {
+          swalModern.fire({title: 'Saving...', allowOutsideClick: false, didOpen: () => {Swal.showLoading()}});
+          
+          google.script.run
+            .withSuccessHandler((response) => { 
+              swalModern.close(); 
+              swalModern.fire('Success', 'Model updated successfully!', 'success'); 
+              loadInitialData(); 
+            })
+            .withFailureHandler((err) => { 
+              swalModern.close(); 
+              swalModern.fire('Error', err.message, 'error'); 
+            })
+            .manageConfigItem('add', 'Model', '-', res.value.model);
+        }
+      });
+    } else {
+        let val = $('#model-select').val();
+        if (!val) return swalModern.fire('Warning', `Please select a Model first.`, 'warning');
+        swalModern.fire({
+          title: `Delete ${val}?`, text: `Are you sure you want to delete this?`, icon: 'warning', 
+          showCancelButton: true, confirmButtonText: 'Delete', customClass: { confirmButton: 'btn btn-danger px-4', cancelButton: 'btn btn-outline-secondary px-4' }
+        }).then((res) => {
+          if(res.isConfirmed) {
+            swalModern.fire({title: 'Deleting...', allowOutsideClick: false, didOpen: () => {Swal.showLoading()}});
+            google.script.run.withSuccessHandler(() => { swalModern.fire('Success', '', 'success'); loadInitialData(); }).withFailureHandler((err) => { swalModern.fire('Error', err.message, 'error'); }).manageConfigItem('delete', 'Model', '-', val);
+          }
+         });
+      }
+    }
+
+  function updateCavityBackend() {
+      let rawCavity = parseInt(document.getElementById("cavity-input").value);
+      currentCavity = (isNaN(rawCavity) || rawCavity < 1) ? 1 : rawCavity;
+      let line = currentLine || "-"; 
+      let model = $('#model-select').val();
+
+      if(model) {
+         allModelCavities[model] = currentCavity;
+         google.script.run
+           .withFailureHandler((err) => {
+             console.error("Update Cavity Failed:", err.message);
+             swalModern.fire('Error', 'Failed to update Cavity: ' + err.message, 'error');
+           })
+           .updateModelConfig(line, model, currentCavity, allModelRoutings[model] || []);
+      }
+  }
+
+  function goToLayout() { 
+    try {
+      currentLine = "-";
+      currentModel = $('#model-select').val();
+      let rawCavity = parseInt(document.getElementById("cavity-input").value);
+      currentCavity = (isNaN(rawCavity) || rawCavity < 1) ? 1 : rawCavity;
+      document.getElementById("cavity-input").value = currentCavity;
+      
+      if (!currentModel) { return swalModern.fire('Warning', 'Please select a Model.', 'warning'); }
+
+      let existingTag = document.getElementById("existing-session-select").value;
+      
+      if (!isStaffMode) {
+        if (existingTag) {
+          currentSessionTag = existingTag; 
+        } else {
+          let rawName = document.getElementById('session-name').value.trim();
+          if (!rawName) {
+             let d = new Date();
+             let hh = String(d.getHours()).padStart(2, '0');
+             let mm = String(d.getMinutes()).padStart(2, '0');
+             rawName = `${hh}:${mm}`;
+          }
+          currentSessionTag = `[Base: ${rawName}]`;
+        }
+      } else {
+        if (existingTag) {
+          currentSessionTag = existingTag;
+        } else {
+          let type = document.querySelector('input[name="study-type-radio"]:checked').value;
+          let rawName = document.getElementById('session-name').value.trim();
+          if (!rawName) {
+             let d = new Date();
+             let hh = String(d.getHours()).padStart(2, '0');
+             let mm = String(d.getMinutes()).padStart(2, '0');
+             rawName = `${hh}:${mm}`;
+          }
+          currentSessionTag = `[${type}: ${rawName}]`;
+        }
+      }
+      
+      allModelCavities[currentModel] = currentCavity;
+      let fetchedRouting = allModelRoutings[currentModel] || [];
+
+      if (fetchedRouting.length > 0 && !fetchedRouting[0].subs) {
+         let newRouting = [];
+         fetchedRouting.forEach(oldSt => {
+            newRouting.push({
+               name: oldSt.name,
+               subs: [ { name: oldSt.sub || "Default", type: oldSt.type, unit: oldSt.unit } ]
+            });
+         });
+         fetchedRouting = newRouting;
+      }
+
+      currentRouting = fetchedRouting;
+      if (currentRouting.length === 0) {
+        currentRouting = [
+          { name: "INKJET MARKING", subs: [{name: "Main", unit: "Panel"}] }, 
+          { name: "SMT B SIDE", subs: [{name: "Main", unit: "Panel"}] }, 
+          { name: "SMT A SIDE", subs: [{name: "Main", unit: "Panel"}] }
+        ];
+        saveCurrentRoutingToBackend(); 
+      }
+
+      swalModern.fire({
+        title: 'Loading Data...',
+        text: 'Checking station status...',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+      });
+
+      google.script.run
+        .withSuccessHandler((completedList) => {
+          swalModern.close();
+          completedStations = completedList || [];
+
+          renderMainStations();
+          google.script.run.withFailureHandler(console.error).saveLastState(currentLine, currentModel, currentCavity);
+          document.getElementById("display-model-layout").textContent = `${currentModel} (Cavity: ${currentCavity})`; 
+          
+          const sessionBadge = document.getElementById("display-session-layout");
+          sessionBadge.textContent = "📍 Project: " + currentSessionTag;
+          sessionBadge.classList.remove("d-none");
+
+          document.getElementById("section-select").classList.add("d-none");
+          document.getElementById("section-layout").classList.remove("d-none"); 
+        })
+        .withFailureHandler((err) => {
+          swalModern.close();
+          swalModern.fire('Error', 'Failed to fetch station status: ' + err.message, 'error');
+        })
+        .getCompletedStations(currentModel, currentSessionTag);
+
+    } catch (e) { swalModern.fire('Error', 'System Error: ' + e.message, 'error'); }
+  }
+
+  function renderMainStations() { 
+    const container = document.getElementById("main-station-container");
+    container.innerHTML = "";
+    if (currentRouting.length === 0) { container.innerHTML = `<div class="text-center text-muted py-4">No main stations configured.</div>`; return; }
+    
+    currentRouting.forEach((st, index) => {
+      let subsCount = st.subs ? st.subs.length : 0;
+      let isMainCompleted = false;
+      if (subsCount > 0) {
+        isMainCompleted = st.subs.every(sub => {
+          let fullName = `${st.name} (${sub.name})`;
+          return completedStations.includes(fullName);
+        });
+      }
+
+      let statusClass = isMainCompleted ? "completed" : "manual";
+      
+      let actionHtml = "";
+      if (isStaffMode) {
+        actionHtml = `
+          <button class="btn-icon edit shadow-sm" onclick="promptEditMainStation(${index})" title="Edit Main Station"><i class="fa-solid fa-pen"></i></button>
+          <button class="btn-icon enter d-flex align-items-center gap-2 shadow-sm" onclick="openSubStations(${index})"><i class="fa-solid fa-folder-open"></i> Manage Subs</button>
+          <button class="btn-icon del shadow-sm" onclick="confirmDeleteMainStation(${index}, '${st.name}')" title="Delete"><i class="fa-solid fa-trash-can"></i></button>
+        `;
+      } else {
+        actionHtml = `<button class="btn-icon enter d-flex align-items-center gap-2 shadow-sm" onclick="openSubStations(${index})"><i class="fa-solid fa-folder-open"></i> View Subs</button>`;
+      }
+
+      container.innerHTML += `
+         <div class="station-item ${statusClass}" data-index="${index}">
+          ${isStaffMode ? '<div class="drag-handle" title="Drag to reorder"><i class="fa-solid fa-grip-vertical"></i></div>' : ''}
+          <div class="station-seq">${index + 1}</div>
+          <div class="station-content">
+            <h4 class="station-name">${st.name}</h4>
+            <div><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary mt-1"><small>${subsCount} Sub-Stations</small></span></div>
+          </div>
+          <div class="station-actions">${actionHtml}</div>
+        </div>
+      `;
+     });
+
+    if(mainSortableInstance) mainSortableInstance.destroy();
+    if(isStaffMode) {
+      mainSortableInstance = new Sortable(container, {
+        handle: '.drag-handle', animation: 200, ghostClass: 'bg-light',
+        onEnd: function (evt) {
+          let movedItem = currentRouting.splice(evt.oldIndex, 1)[0];
+          currentRouting.splice(evt.newIndex, 0, movedItem);
+          saveCurrentRoutingToBackend(); renderMainStations(); 
+        }
+      });
+    }
+  }
+
+  function promptAddMainStation() {
+    swalModern.fire({
+      title: 'Add Main Station',
+      html: `<input id="swal-main-name" class="form-control text-center fs-5 fw-bold" placeholder="Main Station Name (e.g. ICT, FCT)" style="text-transform: uppercase;">`,
+      showCancelButton: true, confirmButtonText: 'Add',
+      preConfirm: () => {
+        const name = document.getElementById('swal-main-name').value.trim().toUpperCase();
+        if (!name) Swal.showValidationMessage('Main Station name is required');
+        return name;
+      }
+    }).then((res) => {
+      if (res.isConfirmed) {
+        currentRouting.push({ name: res.value, subs: [] });
+        renderMainStations(); saveCurrentRoutingToBackend();
+      }
+    });
+  }
+
+  function promptEditMainStation(index) {
+    let st = currentRouting[index];
+    swalModern.fire({
+      title: 'Edit Main Station',
+      html: `<input id="swal-edit-main" class="form-control text-center fs-5 fw-bold" value="${st.name}" placeholder="Main Station Name" style="text-transform: uppercase;">`,
+      showCancelButton: true, confirmButtonText: 'Save',
+      preConfirm: () => {
+        const name = document.getElementById('swal-edit-main').value.trim().toUpperCase();
+        if (!name) Swal.showValidationMessage('Name is required');
+        return name;
+      }
+    }).then((res) => {
+      if (res.isConfirmed) {
+        currentRouting[index].name = res.value;
+        renderMainStations(); saveCurrentRoutingToBackend();
+      }
+    });
+  }
+
+  function confirmDeleteMainStation(index, name) {
+     swalModern.fire({ 
+       title: `Delete ${name}?`, text: "All sub-stations inside will be deleted.", icon: 'warning', showCancelButton: true, confirmButtonText: 'Delete',
+       customClass: { confirmButton: 'btn btn-danger px-4', cancelButton: 'btn btn-outline-secondary px-4' }
+     }).then((res) => { if (res.isConfirmed) { currentRouting.splice(index, 1); renderMainStations(); saveCurrentRoutingToBackend(); } });
+  }
+
+  function openSubStations(index) {
+    currentMainIndex = index;
+    document.getElementById("display-main-station-name").textContent = currentRouting[index].name;
+    document.getElementById("section-layout").classList.add("d-none");
+    document.getElementById("section-sub-layout").classList.remove("d-none");
+    renderSubStations();
+  }
+
+  function renderSubStations() {
+    const container = document.getElementById("sub-station-container");
+    container.innerHTML = "";
+    
+    let subs = currentRouting[currentMainIndex].subs || [];
+    if (subs.length === 0) { container.innerHTML = `<div class="text-center text-muted py-4">No sub-stations configured here yet.</div>`; return; }
+    
+    subs.forEach((sub, subIndex) => {
+      let mainName = currentRouting[currentMainIndex].name;
+      let fullName = `${mainName} (${sub.name})`;
+      let isSubCompleted = completedStations.includes(fullName);
+      let statusClass = isSubCompleted ? "completed" : "manual";
+
+      // [แก้ไข] เพิ่มเงื่อนไขตรวจสอบหน่วย Custom และเปลี่ยน Badge เป็น Batch: X pcs
+      let unitBadge = "";
+      if (sub.unit === 'Single') {
+          unitBadge = '<span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary ms-1"><small>1-by-1 Piece</small></span>';
+      } else if (sub.unit === 'Custom') {
+          let divVal = sub.customDivisor || 1;
+          unitBadge = `<span class="badge bg-primary bg-opacity-10 text-primary border border-primary ms-1"><small>Batch: ${divVal} pcs</small></span>`;
+      } else {
+          unitBadge = '<span class="badge bg-info bg-opacity-10 text-info border border-info ms-1"><small>Panel Flow</small></span>';
+      }
+      
+      let actionHtml = "";
+      if (isStaffMode) {
+        actionHtml = `
+          <button class="btn-icon edit shadow-sm" onclick="promptEditSubStation(${subIndex})" title="Edit"><i class="fa-solid fa-pen"></i></button>
+          <button class="btn-icon enter d-flex align-items-center gap-2 shadow-sm" onclick="openTimeForm(${subIndex})"><i class="fa-solid fa-stopwatch"></i> Log Time</button>
+          <button class="btn-icon del shadow-sm" onclick="confirmDeleteSubStation(${subIndex}, '${sub.name}')" title="Delete"><i class="fa-solid fa-trash-can"></i></button>
+        `;
+      } else {
+         actionHtml = `<button class="btn-icon enter d-flex align-items-center gap-2 shadow-sm" onclick="openTimeForm(${subIndex})"><i class="fa-solid fa-stopwatch"></i> Log Time</button>`;
+      }
+
+      container.innerHTML += `
+         <div class="station-item ${statusClass}" data-index="${subIndex}">
+          ${isStaffMode ? '<div class="drag-handle" title="Drag to reorder"><i class="fa-solid fa-grip-vertical"></i></div>' : ''}
+          <div class="station-seq">${subIndex + 1}</div>
+          <div class="station-content">
+            <h4 class="station-name">${sub.name}</h4>
+            <div>${unitBadge}</div>
+          </div>
+          <div class="station-actions">${actionHtml}</div>
+        </div>
+      `;
+     });
+
+    if(subSortableInstance) subSortableInstance.destroy();
+    if (isStaffMode) {
+      subSortableInstance = new Sortable(container, {
+        handle: '.drag-handle', animation: 200, ghostClass: 'bg-light',
+        onEnd: function (evt) {
+          let movedItem = currentRouting[currentMainIndex].subs.splice(evt.oldIndex, 1)[0];
+          currentRouting[currentMainIndex].subs.splice(evt.newIndex, 0, movedItem);
+          saveCurrentRoutingToBackend(); renderSubStations(); 
+        }
+      });
+    }
+  }
+
+  function promptAddSubStation() { 
+    swalModern.fire({
+      title: 'Add Sub-Station',
+      html: `<input id="swal-sub-name" class="form-control text-center fs-5 fw-bold" placeholder="Sub-Station Name (e.g. A, B, Line 1)" style="text-transform: uppercase;">
+             <div class="mt-3 text-start px-3">
+               <label class="fw-bold text-muted d-block mb-2 small text-uppercase">Workpiece Flow Type (CT Divisor):</label>
+               <div class="form-check"><input class="form-check-input" type="radio" name="stUnit" value="Panel"> <label class="form-check-label text-info fw-bold">Panel Flow (Divide by Cavity)</label></div>
+               <div class="form-check"><input class="form-check-input" type="radio" name="stUnit" value="Single" checked> <label class="form-check-label text-secondary fw-bold">Single Piece (Divide by 1)</label></div>
+               <div class="form-check"><input class="form-check-input" type="radio" name="stUnit" value="Custom"> <label class="form-check-label text-primary fw-bold">Others (Custom Divisor)</label></div>
+               <div class="mt-2 d-none" id="custom-divisor-container">
+                 <input type="number" id="swal-custom-divisor" class="form-control form-control-sm border-primary text-center fw-bold text-primary" placeholder="Enter batch size (e.g. 5)" min="1" step="1">
+               </div>
+             </div>`,
+      showCancelButton: true, confirmButtonText: 'Add',
+      didOpen: () => {
+        // [เพิ่มใหม่] Logic เปิด-ปิด ช่องกรอกตัวเลขเมื่อเลือก Others
+        const radios = document.querySelectorAll('input[name="stUnit"]');
+        const container = document.getElementById('custom-divisor-container');
+        radios.forEach(r => r.addEventListener('change', (e) => {
+          if (e.target.value === 'Custom') container.classList.remove('d-none');
+          else container.classList.add('d-none');
+        }));
+      },
+      preConfirm: () => {
+        const name = document.getElementById('swal-sub-name').value.trim().toUpperCase();
+        if (!name) return Swal.showValidationMessage('Sub-Station name is required');
+        
+        const unitVal = document.querySelector('input[name="stUnit"]:checked').value;
+        let customVal = null;
+        
+        // [เพิ่มใหม่] Validation ตรวจสอบให้กรอกเฉพาะจำนวนเต็มบวก
+        if (unitVal === 'Custom') {
+          customVal = parseInt(document.getElementById('swal-custom-divisor').value);
+          if (isNaN(customVal) || customVal < 1) {
+            Swal.showValidationMessage('Please enter a valid positive integer for Custom Divisor (e.g. 5)');
+            return false;
+          }
+        }
+        return { name: name, unit: unitVal, customDivisor: customVal };
+       }
+    }).then((res) => { 
+      if (res.isConfirmed) { 
+        if(!currentRouting[currentMainIndex].subs) currentRouting[currentMainIndex].subs = [];
+        // [แก้ไข] Push ค่า customDivisor แนบไปด้วย
+        currentRouting[currentMainIndex].subs.push({name: res.value.name, unit: res.value.unit, customDivisor: res.value.customDivisor}); 
+        renderSubStations(); saveCurrentRoutingToBackend(); 
+      } 
+    });
+  }
+
+  function promptEditSubStation(subIndex) {
+    let sub = currentRouting[currentMainIndex].subs[subIndex];
+    let isCustom = (sub.unit === 'Custom');
+    let customVal = sub.customDivisor || "";
+    
+    swalModern.fire({
+      title: 'Edit Sub-Station',
+      html: `<input id="swal-edit-sub" class="form-control text-center fs-5 fw-bold" value="${sub.name}" placeholder="Sub-Station Name" style="text-transform: uppercase;">
+             <div class="mt-3 text-start px-3">
+               <label class="fw-bold text-muted d-block mb-2 small text-uppercase">Workpiece Flow Type (CT Divisor):</label>
+               <div class="form-check"><input class="form-check-input" type="radio" name="editStUnit" value="Panel" ${sub.unit === 'Panel' ? 'checked' : ''}> <label class="form-check-label text-info fw-bold">Panel Flow (Divide by Cavity)</label></div>
+               <div class="form-check"><input class="form-check-input" type="radio" name="editStUnit" value="Single" ${sub.unit === 'Single' ? 'checked' : ''}> <label class="form-check-label text-secondary fw-bold">Single Piece (Divide by 1)</label></div>
+               <div class="form-check"><input class="form-check-input" type="radio" name="editStUnit" value="Custom" ${isCustom ? 'checked' : ''}> <label class="form-check-label text-primary fw-bold">Others (Custom Divisor)</label></div>
+               <div class="mt-2 ${isCustom ? '' : 'd-none'}" id="edit-custom-divisor-container">
+                 <input type="number" id="swal-edit-custom-divisor" class="form-control form-control-sm border-primary text-center fw-bold text-primary" placeholder="Enter batch size (e.g. 5)" min="1" step="1" value="${customVal}">
+               </div>
+             </div>`,
+      showCancelButton: true, confirmButtonText: 'Save',
+      didOpen: () => {
+        // [เพิ่มใหม่] Logic เปิด-ปิด ช่องกรอกตัวเลขในโหมดแก้ไข
+        const radios = document.querySelectorAll('input[name="editStUnit"]');
+        const container = document.getElementById('edit-custom-divisor-container');
+        radios.forEach(r => r.addEventListener('change', (e) => {
+          if (e.target.value === 'Custom') container.classList.remove('d-none');
+          else container.classList.add('d-none');
+        }));
+      },
+      preConfirm: () => {
+        const name = document.getElementById('swal-edit-sub').value.trim().toUpperCase();
+        if (!name) return Swal.showValidationMessage('Sub-Station name is required');
+        
+        const unitVal = document.querySelector('input[name="editStUnit"]:checked').value;
+        let customVal = null;
+        
+        if (unitVal === 'Custom') {
+          customVal = parseInt(document.getElementById('swal-edit-custom-divisor').value);
+          if (isNaN(customVal) || customVal < 1) {
+            Swal.showValidationMessage('Please enter a valid positive integer for Custom Divisor (e.g. 5)');
+            return false;
+          }
+        }
+        return { name: name, unit: unitVal, customDivisor: customVal };
+       }
+    }).then((res) => { 
+      if (res.isConfirmed) { 
+        currentRouting[currentMainIndex].subs[subIndex] = res.value; 
+        renderSubStations(); saveCurrentRoutingToBackend(); swalModern.fire({ icon: 'success', title: 'Updated', timer: 1000, showConfirmButton: false }); 
+      } 
+    });
+  }
+
+  function confirmDeleteSubStation(subIndex, subName) {
+     swalModern.fire({ 
+       title: `Delete ${subName}?`, icon: 'warning', showCancelButton: true, confirmButtonText: 'Delete',
+       customClass: { confirmButton: 'btn btn-danger px-4', cancelButton: 'btn btn-outline-secondary px-4' }
+     }).then((res) => { if (res.isConfirmed) { currentRouting[currentMainIndex].subs.splice(subIndex, 1); renderSubStations(); saveCurrentRoutingToBackend(); } });
+  }
+
+  function saveCurrentRoutingToBackend() { 
+     allModelRoutings[currentModel] = currentRouting; 
+     google.script.run.withFailureHandler(console.error).updateModelConfig(currentLine, currentModel, currentCavity, currentRouting);
+  }
+
+  let currentStationLine = "-"; 
+
+  function openTimeForm(subIndex) { 
+    let mainStation = currentRouting[currentMainIndex];
+    let sub = mainStation.subs[subIndex];
+    
+    // ดึงรายการ Line ที่รองรับ
+    let supportedLines = [];
+    if (mainStation.lines) {
+      supportedLines = mainStation.lines.split(/[,&]+/).map(l => l.trim()).filter(l => l !== "");
+    }
+
+    // ฟังก์ชันย่อยสำหรับเข้าหน้า Form
+    const proceedToForm = (selectedLine) => {
+        currentStationLine = selectedLine.toUpperCase();
+        
+        let displayName = `${mainStation.name} (${sub.name})`;
+        currentStation = displayName; 
+        let unit = sub.unit;
+        currentRound = 1; 
+        
+        if (unit === 'Single') currentEffCavity = 1;
+        else if (unit === 'Custom') currentEffCavity = parseInt(sub.customDivisor) || 1;
+        else currentEffCavity = currentCavity;
+        
+        document.getElementById("display-station").textContent = currentStation;
+        document.getElementById("display-line-form").textContent = currentStationLine; 
+        document.getElementById("display-model-form").textContent = currentModel; 
+        document.getElementById("display-cavity").textContent = currentEffCavity; 
+        
+        generateCycleTable();
+        resetStopwatch();
+        loadDraftCache(); 
+        checkPullButtonVisibility(); 
+        
+        document.getElementById("section-sub-layout").classList.add("d-none"); 
+        document.getElementById("section-form").classList.remove("d-none");
+    };
+
+    // [Logic เด้ง Popup ถาม Line พร้อม UI แบบ iPad-Friendly]
+    if (supportedLines.length > 0) {
+        // [แก้ไข UI] เปลี่ยนเป็น d-grid และปุ่ม btn-outline-primary ขนาดใหญ่
+        let optionsHtml = '<div class="d-grid gap-3 mt-3 px-2">'; 
+        supportedLines.forEach(l => {
+            optionsHtml += `
+              <input type="radio" class="btn-check" name="swalLineSelect" id="line_${l}" value="${l}">
+              <label class="btn btn-outline-primary fw-bold fs-4 py-3 rounded-4 shadow-sm" for="line_${l}">${l}</label>
+            `;
+        });
+        optionsHtml += '</div>';
+        
+        swalModern.fire({
+            title: 'Select Production Line',
+            html: `<p class="text-muted small mb-2">กรุณาระบุไลน์การผลิตสำหรับ ${mainStation.name}</p>` + optionsHtml,
+            showCancelButton: true, confirmButtonText: 'Confirm',
+            preConfirm: () => {
+                let selected = document.querySelector('input[name="swalLineSelect"]:checked');
+                if (!selected) return Swal.showValidationMessage('กรุณาเลือก Line ก่อนเริ่มจับเวลา!');
+                return selected.value;
+            }
+        }).then((res) => {
+            if (res.isConfirmed) proceedToForm(res.value);
+        });
+    } else {
+        // Fallback กรณีไม่มี Data เก่า (ให้พิมพ์เอง)
+        swalModern.fire({
+            title: 'Enter Production Line',
+            input: 'text',
+            inputPlaceholder: 'e.g. A1, B2',
+            showCancelButton: true, confirmButtonText: 'Confirm',
+            preConfirm: (val) => {
+                if (!val.trim()) return Swal.showValidationMessage('กรุณาระบุ Line ก่อนเริ่มจับเวลา!');
+                return val.trim();
+            }
+        }).then((res) => {
+            if (res.isConfirmed) proceedToForm(res.value);
+        });
+    }
+  }
+
+  // [เพิ่มใหม่] ให้ผู้ใช้กดปุ่ม Edit บนมุมซ้ายของฟอร์มเพื่อแก้ Line ได้
+  function promptEditCurrentLine() {
+      let mainStation = currentRouting[currentMainIndex];
+      let supportedLines = [];
+      if (mainStation && mainStation.lines) {
+        supportedLines = mainStation.lines.split(/[,&]+/).map(l => l.trim()).filter(l => l !== "");
+      }
+
+      if (supportedLines.length > 0) {
+          // มีข้อมูล Master Data -> โชว์ปุ่มขนาดใหญ่ให้เลือกใหม่ (iPad-friendly)
+          let optionsHtml = '<div class="d-grid gap-3 mt-3 px-2">'; 
+          supportedLines.forEach(l => {
+              // [เพิ่ม Logic] ติ๊กค่าปัจจุบันให้เป็น Default
+              let isChecked = (l.toUpperCase() === currentStationLine) ? "checked" : "";
+              optionsHtml += `
+                <input type="radio" class="btn-check" name="swalLineSelectEdit" id="edit_line_${l}" value="${l}" ${isChecked}>
+                <label class="btn btn-outline-primary fw-bold fs-4 py-3 rounded-4 shadow-sm" for="edit_line_${l}">${l}</label>
+              `;
+          });
+          optionsHtml += '</div>';
+
+          swalModern.fire({
+              title: 'Edit Current Line',
+              html: `<p class="text-muted small mb-2">เลือกไลน์การผลิตที่ต้องการเปลี่ยน</p>` + optionsHtml,
+              showCancelButton: true, confirmButtonText: 'Update',
+              preConfirm: () => {
+                  let selected = document.querySelector('input[name="swalLineSelectEdit"]:checked');
+                  if (!selected) return Swal.showValidationMessage('กรุณาเลือก Line!');
+                  return selected.value;
+              }
+          }).then((res) => {
+              if (res.isConfirmed) {
+                  currentStationLine = res.value.toUpperCase();
+                  document.getElementById("display-line-form").textContent = currentStationLine;
+                  saveDraftCache();
+              }
+          });
+      } else {
+          // ไม่มี Master Data -> Fallback เป็นพิมพ์ Text
+          swalModern.fire({
+              title: 'Edit Current Line',
+              input: 'text',
+              inputValue: currentStationLine, // เติมค่าเก่าไว้ให้
+              inputPlaceholder: 'e.g. A1, B2',
+              showCancelButton: true, confirmButtonText: 'Update',
+              preConfirm: (val) => {
+                  if (!val.trim()) return Swal.showValidationMessage('Line cannot be empty');
+                  return val.trim();
+              }
+          }).then((res) => {
+              if (res.isConfirmed) {
+                  currentStationLine = res.value.toUpperCase();
+                  document.getElementById("display-line-form").textContent = currentStationLine;
+                  saveDraftCache();
+              }
+          });
+      }
+  }
+
+  function generateCycleTable() { 
+    let html = "";
+    for (let i = 1; i <= 10; i++) {
+      html += `<tr><td class="text-center fw-bold text-muted">${i}</td><td>
+          <input type="number" id="cycletime-${i}" oninput="calculateAvg(); saveDraftCache();" min="0" step="0.01" class="form-control text-center fs-6 text-primary fw-bold">
+          </td>`;
+      html += `<td><input type="text" id="remark-${i}" oninput="saveDraftCache()" class="form-control form-control-sm bg-light border-0 rounded-pill px-3"></td></tr>`;
+    }
+    document.getElementById("cycle-table-body").innerHTML = html;
+    calculateAvg();
+  }
+
+  function calculateAvg() { 
+    let times = [];
+    for (let i = 1; i <= 10; i++) {
+      let el = document.getElementById(`cycletime-${i}`);
+      if (el) {
+        let ct = parseFloat(el.value);
+        if (!isNaN(ct) && ct > 0) { 
+          times.push(ct);
+        }
+      }
+    }
+    
+    let count = times.length;
+    let avgCt = 0;
+    
+    if (count > 0) {
+      if (count >= 3) {
+        // [Defensive] กรณีข้อมูล >= 3 ตัด Min/Max ออกเพื่อหาค่าเสถียรที่สุด
+        times.sort((a, b) => a - b);
+        let trimmedTimes = times.slice(1, -1);
+        let totalTime = trimmedTimes.reduce((sum, val) => sum + val, 0);
+        avgCt = totalTime / trimmedTimes.length;
+      } else {
+        // [Defensive] กรณีข้อมูล < 3 ให้ใช้ค่าเฉลี่ยปกติ
+        let totalTime = times.reduce((sum, val) => sum + val, 0);
+        avgCt = totalTime / count;
+      }
+    }
+    
+    document.getElementById("total-cycle").textContent = (avgCt / currentEffCavity).toFixed(2);
+  }
+
+  function submitData() {
+    // [เพิ่มใหม่] 2. ตรวจสอบว่ากรอกชื่อครบหรือไม่ (Validation)
+    let opName = document.getElementById("operator-name").value.trim();
+    let chkName = document.getElementById("checker-name").value.trim();
+    if (!opName || !chkName) {
+      return swalModern.fire('Validation Error', 'Please enter both Operator and Checker names.', 'warning');
+    }
+
+    let btn = document.getElementById("btn-submit");
+    btn.disabled = true; 
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-2"></i>Submitting...`;
+    
+    let payload = { 
+      line: currentStationLine, 
+      model: currentModel, 
+      station: currentStation, 
+      cavity: currentEffCavity, 
+      sessionTag: currentSessionTag, 
+      routing: currentRouting, 
+      cycles: [],
+      totalCycle: document.getElementById("total-cycle").textContent,
+      // [เพิ่มใหม่] ส่งชื่อ 2 คนไปให้ Backend
+      operator: opName,
+      checker: chkName
+    };
+
+    // ... (ส่วนการวนลูป 10 รอบ และ google.script.run ปล่อยไว้เหมือนเดิมครับ) ...
+    for (let i = 1; i <= 10; i++) { 
+      payload.cycles.push({ 
+        cycleTime: document.getElementById(`cycletime-${i}`).value, 
+        remark: document.getElementById(`remark-${i}`).value || ""
+      });
+    }
+    
+    google.script.run
+      .withSuccessHandler((res) => { 
+        btn.disabled = false; 
+        btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up me-2"></i> Submit to Database`; 
+        if(res.success) { 
+          clearDraftCache(); 
+          currentRound = 1;  
+          if (!completedStations.includes(currentStation)) {
+            completedStations.push(currentStation);
+          }
+          swalModern.fire({ icon: 'success', title: 'Saved successfully', timer: 1500, showConfirmButton: false }); 
+          backToSubLayout(); 
+        } else { 
+          swalModern.fire('Error', res.message, 'error'); 
+        }
+      })
+      .withFailureHandler((err) => {
+        btn.disabled = false; 
+        btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up me-2"></i> Submit to Database`;
+        swalModern.fire('Error', err.message, 'error');
+      })
+      .saveTimeStudyDataFlat(payload);
+  }
+
+  function backToSubLayout() { 
+    currentRound = 1; 
+    renderSubStations(); 
+    document.getElementById("section-form").classList.add("d-none"); 
+    document.getElementById("section-sub-layout").classList.remove("d-none"); 
+  }
+
+  function toggleStopwatch() { 
+    const btn = document.getElementById("btn-stopwatch-toggle");
+    
+    if (!isStopwatchRunning) { 
+      isStopwatchRunning = true; 
+      stopwatchStartTime = performance.now(); 
+      lastLapTime = stopwatchStartTime;
+      updateStopwatchDisplay(); 
+      
+      btn.innerHTML = `<i class="fa-solid fa-flag-checkered me-2"></i> Record Round ${currentRound}`; 
+      btn.className = "btn btn-warning text-white fw-bold px-4 py-3 btn-lg me-2 shadow-sm"; 
+    } 
+    else { 
+      if (currentRound <= 10) {
+        let now = performance.now();
+        let lapTime = (now - lastLapTime) / 1000; 
+        
+        document.getElementById(`cycletime-${currentRound}`).value = lapTime.toFixed(2);
+        calculateAvg();
+        saveDraftCache(); 
+        
+        lastLapTime = now;
+        currentRound++;
+        
+        if (currentRound <= 10) {
+          btn.innerHTML = `<i class="fa-solid fa-flag-checkered me-2"></i> Record Round ${currentRound}`;
+        } else {
+          isStopwatchRunning = false;
+          cancelAnimationFrame(stopwatchAnimationFrame);
+          btn.innerHTML = `<i class="fa-solid fa-stop me-2"></i> Finished`;
+          btn.className = "btn btn-danger text-white fw-bold px-4 py-3 btn-lg me-2 shadow-sm";
+          btn.disabled = true;
+        }
+      }
+    }
+  }
+  
+  function updateStopwatchDisplay() { 
+    if (!isStopwatchRunning) return;
+    let currentElapsed = performance.now() - stopwatchStartTime;
+    document.getElementById("stopwatch-display").textContent = (currentElapsed / 1000).toFixed(2);
+    stopwatchAnimationFrame = requestAnimationFrame(updateStopwatchDisplay);
+  }
+
+  function resetStopwatch() { 
+    isStopwatchRunning = false; 
+    cancelAnimationFrame(stopwatchAnimationFrame); 
+    stopwatchStartTime = 0; 
+    lastLapTime = 0;
+    document.getElementById("stopwatch-display").textContent = "0.00";
+    
+    const btn = document.getElementById("btn-stopwatch-toggle");
+    if (btn) { 
+      if (currentRound <= 10) {
+        btn.innerHTML = `<i class="fa-solid fa-play me-2"></i> Start Round ${currentRound}`; 
+        btn.className = "btn btn-primary fw-bold px-4 py-3 btn-lg me-2 shadow-sm"; 
+        btn.disabled = false;
+      } else {
+        btn.innerHTML = `<i class="fa-solid fa-stop me-2"></i> Finished`;
+        btn.className = "btn btn-danger text-white fw-bold px-4 py-3 btn-lg me-2 shadow-sm";
+        btn.disabled = true;
+      }
+    }
+  }
+
+  function backToSelect() { 
+    document.getElementById('session-name').value = '';
+    $('#existing-session-select').val('').trigger('change');
+
+    let savedModel = $('#model-select').val();
+    google.script.run
+      .withSuccessHandler(function(res) {
+          allModelSessions = res.modelSessionMap || {};
+          if (savedModel && allModelSessions[savedModel]) {
+            let existingSelect = $('#existing-session-select');
+            existingSelect.empty();
+            existingSelect.append(new Option("✨ Create New Version (Use settings below)", ""));
+            // [แก้ไข] จำกัดการแสดงผลเฉพาะ 5 Session ล่าสุด
+            let sessions = [...allModelSessions[savedModel]].reverse().slice(0, 5);
+            sessions.forEach(tag => {
+              existingSelect.append(new Option(`🔄 Continue: ${tag}`, tag));
+            });
+          }
+        })
+      .getInitialConfig();
+
+    document.getElementById("section-layout").classList.add("d-none"); 
+    document.getElementById("section-select").classList.remove("d-none"); 
+  }
+
+  // ==========================================================================
+  // [ส่วนของ Dashboard] ฟังก์ชันระบบแดชบอร์ดและการส่งออกข้อมูล
+  // ==========================================================================
+  
+  function openDashboardFromMatrix(model, sessionTag) {
+      try {
+        currentLine = "-";
+        currentModel = String(model || ""); 
+        currentDashboardCavity = allModelCavities[currentModel] || 1;
+        isNavigatedFromMatrix = true;
+
+        document.getElementById("section-matrix").classList.add("d-none");
+        document.getElementById("section-dashboard").classList.remove("d-none");
+        document.getElementById("db-model-title").textContent = currentModel;
+        document.getElementById("dashboard-table-body").innerHTML = `<tr><td colspan="3" class="text-center py-5 text-muted"><div class="spinner-border text-primary mb-2" role="status"></div><br>Loading Dashboard...</td></tr>`;
+        
+        // [แก้ไข] เปลี่ยนจาก String เป็น Array [...] เพื่อให้ Backend รองรับ Multi-select ได้ถูกต้อง
+        let targetTags = sessionTag ? [String(sessionTag)] : [];
+        loadDashboardData(targetTags, currentActiveArchiveId);
+      } catch(e) { alert("System Error: " + e.message); }
+  }
+
+  function loadDashboardData(targetSessionTags = [], archiveId = "ACTIVE", targetLine = "ALL") {
+      let safeModel = String(currentModel || "");
+      
+      google.script.run.withSuccessHandler((response) => { 
+            
+            // --- [ส่วนที่เพิ่มใหม่: จัดเรียงลำดับตาม Master] ---
+            let rawData = response.data || []; 
+            let routing = allModelRoutings[currentModel] || [];
+            let sortOrder = [];
+            
+            routing.forEach(main => {
+               if (main.subs && main.subs.length > 0) {
+                  main.subs.forEach(sub => sortOrder.push(`${main.name} (${sub.name})`));
+               } else {
+                  sortOrder.push(main.name);
+               }
+            });
+
+            rawData.sort((a, b) => {
+                let nameA = `${a.mainStation} (${a.subStation})`;
+                let nameB = `${b.mainStation} (${b.subStation})`;
+                let indexA = sortOrder.indexOf(nameA);
+                let indexB = sortOrder.indexOf(nameB);
+                if (indexA === -1) indexA = 999; 
+                if (indexB === -1) indexB = 999;
+                return indexA - indexB;
+            });
+            
+            currentDashboardData = rawData; 
+            // ---------------------------------------------
+            
+            // 1. จัดการ Dropdown Line
+            const $lineSelect =$('#dashboard-line-select');
+            let currentLineVal = targetLine;
+            $lineSelect.empty().append(new Option("All Lines", "ALL"));
+            (response.availableLines || []).forEach(line => {
+                $lineSelect.append(new Option(line, line));
+            });
+            $lineSelect.val(currentLineVal);
+
+            // 2. จัดการ Dropdown Session (Multi-select Select2)
+            const $sessionSelect = $('#dashboard-session-select');
+            if ($sessionSelect.hasClass("select2-hidden-accessible")) {
+                $sessionSelect.select2('destroy');
+            }
+            $sessionSelect.empty();
+            
+            let availSessions = response.availableSheets || [];
+            if (availSessions.length > 0) {
+              availSessions.forEach(sheetName => {
+                 $sessionSelect.append(new Option(sheetName, sheetName));
+              });
+            }
+            
+            $sessionSelect.select2({
+              theme: 'bootstrap-5', 
+              width: '500px', // ✅ กำหนดเป็น 500px หรือถ้าอยากยาวกว่านี้ใส่ 600px, 700px ได้เลยครับ
+              placeholder: 'Select Sessions to Aggregate', 
+              allowClear: true
+            });
+            
+            if (response.activeSessions && response.activeSessions.length > 0) {
+               $sessionSelect.val(response.activeSessions).trigger('change.select2');
+            }
+
+            $sessionSelect.off('select2:select select2:unselect').on('select2:select select2:unselect', function(e) {
+               setTimeout(() => changeDashboardFilter(), 50);
+            });
+
+            // [แก้ไข 4] ลบการอัปเดต #dashboard-date-select ที่ลบทิ้งไปแล้วออกไป
+
+            // 3. วาดตารางและกราฟ
+            renderWebDashboard(currentDashboardData, response.lastUpdated, response.panelCavity);
+            
+      }).getDashboardData(safeModel, targetLine, targetSessionTags, archiveId);
+  }
+
+  function changeDashboardFilter() {
+      let selectedSessions = $('#dashboard-session-select').val() || [];
+      let selectedLine = $('#dashboard-line-select').val() || "ALL";
+      
+      document.getElementById("dashboard-table-body").innerHTML = `<tr><td colspan="10" class="text-center py-5 text-muted"><div class="spinner-border text-primary mb-2" role="status"></div><br>Aggregating Global Average...</td></tr>`;
+      
+      // เรียกข้อมูลใหม่ โดยส่ง Array ของ Session และ Line กลับไปให้ Backend คำนวณ
+      loadDashboardData(selectedSessions, currentActiveArchiveId, selectedLine);
+  }
+
+  function updateInsightsMetrics(data) {
+    const metricsDiv = document.getElementById("insight-metrics");
+    if(!data || data.length === 0) { metricsDiv.classList.add("d-none"); return; }
+    metricsDiv.classList.remove("d-none");
+
+    let baseMaxCT = Math.max(...data.map(i => i.total));
+    let baseBNObj = data.find(i => i.total === baseMaxCT);
+    let baseBN = baseBNObj ? `${baseBNObj.mainStation} (${baseBNObj.subStation})` : "-";
+    let baseUPH = baseMaxCT > 0 ? Math.floor(3600 / baseMaxCT) : 0;
+    
+    // การคำนวณตามหลักการของ Excel Template
+    let headCount = data.length; // 1 Sub-station = 1 Process
+    let lineTotalTime = baseMaxCT * headCount; // Capacity สูงสุดอิงจากคอขวด
+    
+    let totalLossTime = 0; // หาเวลาว่างของแต่ละ Process
+    data.forEach(item => {
+      totalLossTime += (baseMaxCT - item.total);
+    });
+    
+    // การหา Line Efficiency %
+    let lineEfficiency = lineTotalTime > 0 ? (1 - (totalLossTime / lineTotalTime)) * 100 : 0;
+    
+    // การหา Capacity Estimate โดยอิงจากชั่วโมงการทำงาน
+    let taktHoursInput = parseFloat(document.getElementById('takt-hours').value);
+    let workingHours = (isNaN(taktHoursInput) || taktHoursInput <= 0) ? 7 : taktHoursInput; // Default 7 ชั่วโมง
+    let capacityEst = baseMaxCT > 0 ? Math.floor((workingHours * 3600) / baseMaxCT) : 0;
+
+    // อัปเดตผลลัพธ์ลง DOM
+    document.getElementById("uph-base").textContent = baseUPH;
+    document.getElementById("bn-base").textContent = baseBN + ` (${baseMaxCT.toFixed(2)}s)`;
+    document.getElementById("cap-base").textContent = capacityEst.toLocaleString(); // ใส่คอมม่าคั่นหลักพัน
+    document.getElementById("loss-base").textContent = totalLossTime.toFixed(2);
+    
+    // จัดการ Progress Bar ของ Line Efficiency และเปลี่ยนสีตามความสมดุล
+    let effEl = document.getElementById("eff-progress");
+    if(effEl) {
+       let displayEff = lineEfficiency.toFixed(1);
+       effEl.style.width = `${displayEff}%`;
+       effEl.textContent = `${displayEff}%`;
+       effEl.setAttribute("aria-valuenow", displayEff);
+       
+       effEl.className = "progress-bar fw-bold fs-6";
+       if (lineEfficiency >= 85) effEl.classList.add("bg-success");
+       else if (lineEfficiency >= 70) effEl.classList.add("bg-info");
+       else if (lineEfficiency >= 50) effEl.classList.add("bg-warning", "text-dark");
+       else effEl.classList.add("bg-danger");
+    }
+  }
+
+  function renderWebDashboard(data, lastUpdated, panelCavity) {
+    const tbody = document.getElementById("dashboard-table-body");
+    let html = "";
+    
+    // อัปเดตการ์ดตัวเลขสรุปด้านบน
+    updateInsightsMetrics(data);
+
+    // วาดตารางข้อมูล
+    data.forEach(item => { 
+      html += `<tr>
+          <td class="fw-bold text-main bg-light border-0 rounded-start text-start ps-4">${item.mainStation}</td>
+          <td class="fw-bold text-muted bg-light border-0 text-start">${item.subStation}</td>
+          <td class="fw-bold text-primary bg-primary bg-opacity-10 border-0 rounded-end">${item.total.toFixed(2)}</td>
+        </tr>
+        <tr><td colspan="3" class="p-1 border-0"></td></tr>`;
+    });
+
+    if(lastUpdated !== "-") {
+      html += `
+        <tr class="table-light">
+          <td colspan="2" class="text-start text-muted px-4 py-3 border-0 rounded-start-3"><i class="fa-regular fa-clock me-2"></i> <strong>Last Updated:</strong> ${lastUpdated}</td>
+          <td colspan="1" class="text-end text-muted px-4 py-3 border-0 rounded-end-3"><strong>Workpiece Form:</strong> ${panelCavity}</td>
+        </tr>
+      `;
+    }
+    tbody.innerHTML = html;
+    
+    // วาดกราฟแท่ง (Bar Chart)
+    let chartDatasets = [];
+    const maxTotal = data.length > 0 ? Math.max(...data.map(i => i.total)) : 0;
+    const bgColors = data.map(i => i.total === maxTotal && i.total > 0 ? '#ef4444' : '#2563eb');
+    chartDatasets.push({ type: 'bar', label: 'Cycle Time', data: data.map(i => i.total), backgroundColor: bgColors, borderRadius: 8 });
+
+    const ctx = document.getElementById('localSummaryChart').getContext('2d');
+    if (webChartInstance) webChartInstance.destroy();
+    
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.color = '#64748b';
+    webChartInstance = new Chart(ctx, { 
+      type: 'bar', 
+      data: { labels: data.map(i => `${i.mainStation} (${i.subStation})`), datasets: chartDatasets }, 
+      options: { 
+        responsive: true, maintainAspectRatio: false,
+        animation: { duration: 1000, easing: 'easeOutBack' },
+        plugins: { legend: { display: true, position: 'bottom', labels: { usePointStyle: true, padding: 20 } } }, 
+        scales: { 
+          y: { beginAtZero: true, grid: { borderDash: [4, 4], color: '#e2e8f0' } },
+          x: { grid: { display: false } }
+        } 
+      } 
+    });
+    updateChartTaktTime();
+  }
+
+  function exportToExcel() {
+  if (currentDashboardData.length === 0) return swalModern.fire('Notice', 'No data to export.', 'warning');
+  
+  // 1. ดึงค่า Line จาก Dropdown ออกมาก่อนเริ่มสร้าง Chain
+  let activeLineForExport = $('#dashboard-line-select').val() || "ALL";
+
+  swalModern.fire({
+    title: 'Generating Native Excel Chart...', 
+    text: 'Creating .xlsx file from server. Please wait.', 
+    allowOutsideClick: false, 
+    didOpen: () => {Swal.showLoading()}
+  });
+
+  // 2. เรียก google.script.run ต่อเนื่องกันโดยไม่ให้มีคำสั่งอื่นมาคั่นกลาง
+  google.script.run
+    .withSuccessHandler(function(res) {
+        if(res.success) {
+            let link = document.createElement('a');
+            link.href = 'data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,' + res.base64;
+            link.download = res.filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            swalModern.close();
+        } else {
+            swalModern.fire('Error', res.message, 'error');
+        }
+    })
+    .withFailureHandler(function(err) {
+        swalModern.fire('Error', err.message, 'error');
+    })
+    .generateExcelExport(currentDashboardData, currentModel, activeLineForExport, currentTaktTime);
+}
+
+  let currentTaktTime = 0;
+
+  function calculateTaktTime() {
+    let forecast = parseFloat(document.getElementById('takt-forecast').value);
+    let days = parseFloat(document.getElementById('takt-days').value);
+    let hours = parseFloat(document.getElementById('takt-hours').value);
+
+    if (forecast > 0 && days > 0 && hours > 0) {
+      let totalSeconds = days * hours * 3600;
+      currentTaktTime = totalSeconds / forecast;
+      document.getElementById('display-takt-time').textContent = currentTaktTime.toFixed(2);
+    } else {
+      currentTaktTime = 0;
+      document.getElementById('display-takt-time').textContent = "-";
+    }
+    
+    updateChartTaktTime();
+    // [เพิ่มใหม่] เพื่อให้เวลาผู้ใช้ปรับเปลี่ยนช่อง Working Hours ค่า Capacity จะอัปเดตแบบ Realtime
+    updateInsightsMetrics(currentDashboardData); 
+  }
+
+  function updateChartTaktTime() {
+    if (!webChartInstance || currentDashboardData.length === 0) return;
+    
+    let hasTaktLine = webChartInstance.data.datasets.length > 1;
+    
+    if (currentTaktTime > 0) {
+      let taktDataArray = currentDashboardData.map(() => currentTaktTime);
+      
+      if (hasTaktLine) {
+        webChartInstance.data.datasets[1].data = taktDataArray;
+        webChartInstance.data.datasets[1].label = `Takt Time (${currentTaktTime.toFixed(2)}s)`;
+      } else {
+        webChartInstance.data.datasets.push({
+          type: 'line',
+          label: `Takt Time (${currentTaktTime.toFixed(2)}s)`,
+          data: taktDataArray,
+          borderColor: '#f59e0b',
+          borderWidth: 2,
+          borderDash: [5, 5],
+          pointRadius: 0,
+          fill: false
+        });
+      }
+    } else {
+      if (hasTaktLine) webChartInstance.data.datasets.pop();
+    }
+    webChartInstance.update();
+  }
+
+  // ==========================================================================
+  // [ส่วนของ Summary Matrix] ระบบการจัดการหน้า Summary Matrix
+  // ==========================================================================
+  
+  let globalMatrixData = []; 
+  let currentFilteredMatrixData = []; // [เพิ่มใหม่] ตัวแปรเก็บข้อมูลที่ถูก Filter แล้ว เพื่อนำไป Export
+
+  // [เพิ่มใหม่] ตัวแปรเก็บ Archive ID ที่กำลังเลือก
+  let currentActiveArchiveId = "ACTIVE"; 
+
+  // [แก้ไข] ฟังก์ชันเรียกหน้า Summary Matrix
+  function openMatrixSummary() {
+    try {
+      document.getElementById("section-select").classList.add("d-none");
+      document.getElementById("section-matrix").classList.remove("d-none");
+      const container = document.getElementById("matrixAccordion");
+      container.innerHTML = `<div class="text-center py-5 text-muted bg-white rounded-4 border"><div class="spinner-border text-info mb-2" role="status"></div><br>Loading Data...</div>`;
+      
+      // ดึงรายชื่อ Archive ไฟล์มาก่อน
+      google.script.run.withSuccessHandler((list) => {
+          let sel = $('#filter-archive-source');
+          // เก็บค่าเดิมไว้ก่อนเคลียร์
+          let currentVal = sel.val();
+          sel.empty().append(new Option("🟢 Current Data (Last 3 Months)", "ACTIVE"));
+          list.forEach(a => sel.append(new Option(`📦 Archived: ${a.month}`, a.fileId)));
+          sel.val(currentVal || "ACTIVE");
+
+          // ดึงข้อมูล Matrix
+          fetchMatrixData(sel.val());
+      }).getArchiveList();
+    } catch (e) { console.error(e); }
+  }
+
+  function fetchMatrixData(archiveId) {
+      currentActiveArchiveId = archiveId;
+      const container = document.getElementById("matrixAccordion");
+      container.innerHTML = `<div class="text-center py-5 text-muted bg-white rounded-4 border"><div class="spinner-border text-info mb-2" role="status"></div><br>Fetching Database...</div>`;
+      
+      google.script.run.withSuccessHandler(function(res) {
+          if (res.success) {
+            globalMatrixData = res.data;
+            currentFilteredMatrixData = [...globalMatrixData]; 
+            populateMatrixFilters(); 
+            renderMatrixTable(globalMatrixData); 
+          } else {
+            container.innerHTML = `<div class="text-center py-4 text-danger bg-white rounded-4 border">Error: ${res.message}</div>`;
+          }
+      }).getAllMatrixSummaryData(archiveId);
+  }
+
+  // [เพิ่มใหม่] เมื่อผู้ใช้เปลี่ยน Dropdown Data Source
+  function changeArchiveSource() {
+      fetchMatrixData($('#filter-archive-source').val());
+  }
+
+
+  // [เพิ่มใหม่] ฟังก์ชันแจ้งเตือนตอนกดยืนยัน Archive (ปุ่มสีเหลือง)
+  function promptArchiveData() {
+      swalModern.fire({
+          title: 'Run Data Archiving?',
+          html: `<div class="text-start">
+                  <p>ระบบจะทำการประมวลผลดังนี้:</p>
+                  <ul>
+                    <li>ดึงข้อมูลที่อายุ <b>เก่ากว่า 3 เดือนล่าสุด</b> (อิงจากเวลาปัจจุบัน)</li>
+                    <li>สร้างไฟล์ Excel แยกตามเดือน (เช่น CT_Jun_2026)</li>
+                    <li>บันทึกไฟล์ไปที่โฟลเดอร์ Google Drive ที่กำหนดไว้</li>
+                    <li class="text-danger fw-bold">ลบข้อมูลเหล่านั้นออกจากไฟล์หลักเพื่อเพิ่มความเร็ว</li>
+                  </ul>
+                 </div>`,
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Yes, Start Archiving',
+          confirmButtonColor: '#f59e0b',
+          cancelButtonText: 'Cancel'
+      }).then((res) => {
+          if (res.isConfirmed) {
+              swalModern.fire({ title: 'Archiving Data...', text: 'อาจใช้เวลา 1-3 นาที ห้ามปิดหน้าต่างนี้', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+              
+              google.script.run.withSuccessHandler(result => {
+                  if(result.success) {
+                      swalModern.fire('Success', result.message, 'success').then(() => {
+                          // โหลดหน้า Matrix ใหม่เพื่อให้ Dropdown อัปเดตรายการไฟล์ Archive
+                          openMatrixSummary(); 
+                      });
+                  } else {
+                      swalModern.fire('Error', result.message, 'error');
+                  }
+              }).withFailureHandler(err => {
+                  swalModern.fire('System Error', err.message, 'error');
+              }).runArchiveProcess();
+          }
+      });
+  }
+
+  function populateMatrixFilters() {
+    // 1. ทำลาย Select2 เดิมทิ้งก่อน (ป้องกัน UI ซ้อนกัน)
+    if ($('#filter-model').hasClass("select2-hidden-accessible")) $('#filter-model').select2('destroy');
+    if ($('#filter-session').hasClass("select2-hidden-accessible")) $('#filter-session').select2('destroy');
+    if ($('#filter-date').hasClass("select2-hidden-accessible")) $('#filter-date').select2('destroy');
+    if ($('#filter-line').hasClass("select2-hidden-accessible")) $('#filter-line').select2('destroy'); 
+
+    // 2. ล้างตัวเลือก (Options) เก่าออกทั้งหมด
+    $('#filter-model, #filter-session, #filter-date, #filter-line').empty();
+
+    // 3. เริ่มต้น Select2 ใหม่ พร้อมตั้งค่า Placeholder
+    $('#filter-model').select2({ theme: 'bootstrap-5', width: '100%', placeholder: 'All Models', allowClear: true });
+    $('#filter-session').select2({ theme: 'bootstrap-5', width: '100%', placeholder: 'All Sessions', allowClear: true });
+    $('#filter-date').select2({ theme: 'bootstrap-5', width: '100%', placeholder: 'All Months', allowClear: true });
+    $('#filter-line').select2({ theme: 'bootstrap-5', width: '100%', placeholder: 'All Lines', allowClear: true });
+
+    // 4. ผูก Event Listener เฉพาะตอนที่ผู้ใช้กดเลือก (select) หรือยกเลิก (unselect) เพื่อป้องกัน Infinite Loop
+    $('#filter-model, #filter-session, #filter-date, #filter-line').off('select2:select select2:unselect').on('select2:select select2:unselect', function(e) {
+      setTimeout(() => {
+        applyMatrixFilters();
+      }, 50);
+    });
+
+    // 5. สั่งรัน Filter ทันทีเพื่อสร้างตัวเลือกทั้งหมด (Initial Data Load)
+    applyMatrixFilters();
+  }
+
+  function applyMatrixFilters() {
+    try {
+      // ดึงค่า Array ปัจจุบันที่ผู้ใช้เลือกไว้
+      let selModels = $('#filter-model').val() || [];
+      let selSessions = $('#filter-session').val() || [];
+      let selMonths = $('#filter-date').val() || [];
+      let selLines = $('#filter-line').val() || []; 
+
+      // ฟังก์ชันช่วยแยก "เดือน-ปี" ออกจาก Timestamp
+      const getMonthString = (ts) => {
+          if (!ts) return null;
+          let parts = ts.split(' ')[0].split('-');
+          return parts.length === 3 ? parts[1] + "-" + parts[2] : null;
+      };
+
+      // ---------------------------------------------------------
+      // ฟังก์ชันย่อยสำหรับกรองข้อมูลแบบ Cross-Filtering
+      // โดยสามารถ "ข้าม (Skip)" การกรองของตัวเองได้ เพื่อหาว่ามีตัวเลือกอะไรเหลือให้เลือกบ้าง
+      // ---------------------------------------------------------
+      const filterData = (skipCategory) => {
+          let validSessionsByLine = new Set();
+          
+          // Logic เดิม: Session-Level Filter สำหรับ Line
+          if (skipCategory !== 'Line' && selLines.length > 0) {
+             globalMatrixData.forEach(r => {
+                if (selLines.includes(r.line)) validSessionsByLine.add(r.model + "___" + r.session);
+             });
+          }
+
+          return globalMatrixData.filter(r => {
+              let passModel = (skipCategory === 'Model') || (selModels.length === 0 || selModels.includes(r.model));
+              let passSession = (skipCategory === 'Session') || (selSessions.length === 0 || selSessions.includes(r.session));
+              
+              let passMonth = true;
+              if (skipCategory !== 'Month' && selMonths.length > 0) {
+                  let rMonth = getMonthString(r.timestamp);
+                  passMonth = rMonth && selMonths.includes(rMonth);
+              }
+              
+              let passLine = true;
+              if (skipCategory !== 'Line' && selLines.length > 0) {
+                  passLine = validSessionsByLine.has(r.model + "___" + r.session);
+              }
+              
+              return passModel && passSession && passMonth && passLine;
+          });
+      };
+
+      // 1. ดึงข้อมูลที่ผ่านฟิลเตอร์ "ทุกเงื่อนไข" เพื่อเอาไปแสดงในตาราง Matrix จริงๆ
+      let fullyFilteredData = filterData('None');
+
+      // 2. คำนวณหาตัวเลือก (Options) ที่เป็นไปได้ของแต่ละ Dropdown
+      let validModels = new Set(), validSessions = new Set(), validMonths = new Set(), validLines = new Set();
+      
+      filterData('Model').forEach(r => { if(r.model) validModels.add(r.model); });
+      filterData('Session').forEach(r => { if(r.session) validSessions.add(r.session); });
+      filterData('Month').forEach(r => { let m = getMonthString(r.timestamp); if(m) validMonths.add(m); });
+      filterData('Line').forEach(r => { if(r.line && r.line !== "-") validLines.add(r.line); });
+
+      // 3. ฟังก์ชันอัปเดต Dropdown พร้อมเคลียร์ค่าที่ขัดแย้ง (Auto-Clear Invalid Selections)
+      const updateDropdown = (id, validSet, currentSelections) => {
+          let el = $('#' + id);
+          let newSelections = [];
+          
+          // เช็คว่าค่าเดิมที่เลือกไว้ ยังอยู่ในรายการที่ถูกต้องหรือไม่ ถ้าไม่ ให้ลบทิ้ง
+          currentSelections.forEach(val => {
+              if (validSet.has(val)) newSelections.push(val);
+          });
+          
+          el.empty(); // ล้างตัวเลือกเก่า
+          Array.from(validSet).sort().forEach(val => {
+              el.append(new Option(val, val, false, false));
+          });
+          
+          // อัปเดตค่าที่ถูกเลือกกลับเข้าไป (ใช้ change.select2 เพื่อให้ UI อัปเดตโดยไม่ไป Trigger ให้ระบบลูปตัวเอง)
+          el.val(newSelections).trigger('change.select2'); 
+      };
+
+      // ทำการอัปเดตทั้ง 4 Dropdown
+      updateDropdown('filter-model', validModels, selModels);
+      updateDropdown('filter-session', validSessions, selSessions);
+      updateDropdown('filter-date', validMonths, selMonths);
+      updateDropdown('filter-line', validLines, selLines);
+
+      // 4. วาดตารางข้อมูลส่งท้าย
+      if (typeof currentFilteredMatrixData !== 'undefined') {
+          currentFilteredMatrixData = fullyFilteredData; 
+      }
+      renderMatrixTable(fullyFilteredData);
+
+    } catch (error) {
+      console.error("Error in applyMatrixFilters:", error);
+      swalModern.fire('UI Error', 'เกิดข้อผิดพลาดในการกรองข้อมูล: ' + error.message, 'error');
+    }
+  }
+  // [เพิ่มใหม่] ฟังก์ชันสำหรับสั่ง Export Matrix เป็น Excel
+  function exportMatrixToExcel() {
+    if (!currentFilteredMatrixData || currentFilteredMatrixData.length === 0) {
+      return swalModern.fire('Notice', 'No data to export based on current filters.', 'warning');
+    }
+    
+    swalModern.fire({
+      title: 'Generating Excel File...', 
+      text: 'Creating .xlsx file from server. Please wait.', 
+      allowOutsideClick: false, 
+      didOpen: () => {Swal.showLoading()}
+    });
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+          if(res.success) {
+              let link = document.createElement('a');
+              link.href = 'data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,' + res.base64;
+              link.download = res.filename;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              swalModern.close();
+          } else {
+              swalModern.fire('Error', res.message, 'error');
+          }
+      })
+      .withFailureHandler(function(err) {
+          swalModern.fire('Error', err.message, 'error');
+      })
+      .generateMatrixExcelExport(currentFilteredMatrixData); // ดึงข้อมูลเฉพาะที่ผ่าน Filter แล้วส่งไป Backend
+  }
+
+  function renderMatrixTable(data) {
+    const container = document.getElementById("matrixAccordion");
+    if (data.length === 0) {
+      container.innerHTML = `<div class="text-center py-5 text-muted bg-white rounded-4 border">No data found matching the selected filters.</div>`;
+      return;
+    }
+    
+    // จัดกลุ่มข้อมูล (Group By Model + Session)
+    let groups = {};
+    data.forEach(item => {
+       let key = `${item.model}___${item.session}`;
+       if(!groups[key]) {
+          groups[key] = {
+             model: item.model, session: item.session,
+             progress: item.progress, totalCT: item.totalModelCT,
+             bottleneck: item.bottleneck, timestamp: item.timestamp,
+             stations: []
+          };
+       }
+       groups[key].stations.push(item);
+    });
+
+    let html = "";
+    let index = 0;
+    const parseR = (val) => (!val || isNaN(parseFloat(val))) ? "-" : parseFloat(val).toFixed(2);
+
+    for (let key in groups) {
+       let g = groups[key];
+       let colId = `collapse_${index}`;
+       let headId = `heading_${index}`;
+
+       let rowsHtml = "";
+       let incompleteMainStations = new Set();
+
+       g.stations.forEach(st => {
+          let avgDisplay = st.avgCT > 0 ? st.avgCT.toFixed(2) : "-";
+          
+          // [เพิ่มใหม่] ตรวจสอบว่ามีข้อมูล Line หรือไม่ ถ้ามีให้สร้าง Badge HTML เล็กๆ เตรียมไว้
+          let lineBadge = st.line && st.line !== "-" ? ` <span class="badge bg-secondary bg-opacity-10 text-secondary border ms-1" style="font-size:0.7rem;">Line: ${st.line}</span>` : "";
+
+          // [แก้ไข UI ใน Summary Matrix ให้แสดง Line แบบ Badge เล็กๆ ท้ายชื่อ Station]
+          rowsHtml += `<tr>
+            <td class="text-start ps-4 fw-bold text-info">${st.station}${lineBadge}</td>
+            <td class="text-start text-muted">${st.operator || '-'}</td>
+            <td class="text-start text-muted">${st.checker || '-'}</td>
+            <td>${parseR(st.r1)}</td><td>${parseR(st.r2)}</td><td>${parseR(st.r3)}</td>
+            <td>${parseR(st.r4)}</td><td>${parseR(st.r5)}</td><td>${parseR(st.r6)}</td>
+            <td>${parseR(st.r7)}</td><td>${parseR(st.r8)}</td><td>${parseR(st.r9)}</td>
+            <td>${parseR(st.r10)}</td>
+            <td class="fw-bold text-primary bg-primary bg-opacity-10">${avgDisplay}</td>
+          </tr>`;
+
+          if (!st.avgCT || st.avgCT <= 0) {
+             let mainName = st.station.split(" (")[0].trim();
+             incompleteMainStations.add(mainName);
+          }
+       });
+
+       let missingArr = Array.from(incompleteMainStations);
+       let missingTextHtml = "";
+       if (missingArr.length > 0) {
+           let displayMissing = missingArr.slice(0, 2).join(", ");
+           let moreCount = missingArr.length - 2;
+           if (moreCount > 0) {
+               displayMissing += ` (+${moreCount} more)`;
+           }
+           missingTextHtml = `<span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary" title="Stations not completed"><i class="fa-solid fa-circle-exclamation me-1"></i> Missing: ${displayMissing}</span>`;
+       }
+
+       // Logic รองรับการแปลง Progress
+       let rawProgress = String(g.progress || "0").trim();
+       let progressInt = 0;
+
+       if (rawProgress.includes("%")) {
+           progressInt = parseInt(rawProgress.replace("%", "")) || 0;
+       } else {
+           let floatVal = parseFloat(rawProgress);
+           if (!isNaN(floatVal)) {
+               if (floatVal <= 1 && floatVal > 0) {
+                   progressInt = Math.round(floatVal * 100); 
+               } else {
+                   progressInt = Math.round(floatVal);
+               }
+           }
+       }
+       
+       let progressDisplay = progressInt + "%";
+
+       let progressColorClass = "bg-secondary text-secondary border-secondary"; 
+       if (progressInt >= 1 && progressInt <= 30) {
+           progressColorClass = "bg-danger text-danger border-danger"; 
+       } else if (progressInt >= 31 && progressInt <= 99) {
+           progressColorClass = "bg-warning text-warning border-warning"; 
+       } else if (progressInt === 100) {
+           progressColorClass = "bg-success text-success border-success"; 
+       }
+
+       // [แก้ไข] ลบ namesHtml ที่แสดง Badge ชื่อบน Header ออก
+       html += `
+       <div class="accordion-item border mb-3 rounded-4 overflow-hidden shadow-sm">
+         <h2 class="accordion-header position-relative" id="${headId}">
+           <button class="accordion-button collapsed bg-white py-3 ps-4 pe-4" type="button" data-bs-toggle="collapse" data-bs-target="#${colId}">
+              <div class="d-flex flex-wrap align-items-center gap-2 fw-bold" style="max-width: calc(100% - 280px);">
+                <span class="badge bg-primary fs-6">${g.model}</span>
+                <span class="text-muted d-flex align-items-center"><i class="fa-solid fa-folder-tree me-1"></i> ${g.session}</span>
+                <span class="badge ${progressColorClass} bg-opacity-10 border"><i class="fa-solid fa-bars-progress me-1"></i> ${progressDisplay}</span>
+                
+                ${missingTextHtml}
+              </div>
+           </button>
+           
+           <div class="position-absolute top-50 translate-middle-y d-flex align-items-center gap-3" style="right: 60px; z-index: 5;">
+              <small class="text-muted fw-normal d-none d-xl-block" style="font-size:0.75rem; white-space: nowrap;">อัปเดต: ${g.timestamp}</small>
+              <button class="btn btn-sm btn-primary fw-bold text-white shadow-sm px-3" onclick="openDashboardFromMatrix('${g.model}', '${g.session}')" style="white-space: nowrap;">
+                 <i class="fa-solid fa-chart-pie me-1"></i> Dashboard
+              </button>
+           </div>
+         </h2>
+
+         <div id="${colId}" class="accordion-collapse collapse" data-bs-parent="#matrixAccordion">
+           <div class="accordion-body p-0">
+             <div class="table-responsive">
+               <table class="table table-hover mb-0 text-center align-middle border-0" style="min-width: 1100px;">
+                 <thead class="table-light text-uppercase small tracking-wider border-bottom">
+                   <tr>
+                     <th class="py-3 text-start ps-4">Station</th>
+                     <!-- [แก้ไข] เพิ่ม Header คอลัมน์ Operator และ Checker -->
+                     <th class="py-3 text-start text-muted">Operator</th>
+                     <th class="py-3 text-start text-muted">Checker</th>
+                     <th class="py-3 text-muted">R1</th><th class="py-3 text-muted">R2</th><th class="py-3 text-muted">R3</th>
+                     <th class="py-3 text-muted">R4</th><th class="py-3 text-muted">R5</th><th class="py-3 text-muted">R6</th>
+                     <th class="py-3 text-muted">R7</th><th class="py-3 text-muted">R8</th><th class="py-3 text-muted">R9</th>
+                     <th class="py-3 text-muted">R10</th>
+                     <th class="py-3 text-primary bg-primary bg-opacity-10">Avg CT (s)</th>
+                   </tr>
+                 </thead>
+                 <tbody class="fw-medium border-0 bg-white">${rowsHtml}</tbody>
+               </table>
+             </div>
+           </div>
+         </div>
+       </div>
+       `;
+       index++;
+    }
+    container.innerHTML = html;
+  }
+
+  function backToSelectFromMatrix() {
+    document.getElementById("section-matrix").classList.add("d-none");
+    document.getElementById("section-select").classList.remove("d-none");
+  }
+
+  // ==========================================================================
+  // [ส่วนของการจัดการ Cache Local Storage]
+  // ==========================================================================
+  
+  function getDraftCacheKey() {
+    return `TS_DRAFT_${currentModel}_${currentSessionTag}_${currentStation}`;
+  }
+
+  function saveDraftCache() {
+    if (!currentStation || !currentModel) return;
+    let cyclesData = [];
+    for (let i = 1; i <= 10; i++) {
+      let ct = document.getElementById(`cycletime-${i}`)?.value || "";
+      let rm = document.getElementById(`remark-${i}`)?.value || "";
+      cyclesData.push({ ct: ct, rm: rm });
+    }
+    let draftPayload = {
+      cycles: cyclesData,
+      currentRound: currentRound,
+      effCavity: currentEffCavity,
+      operator: document.getElementById("operator-name")?.value || "",
+      checker: document.getElementById("checker-name")?.value || ""
+    };
+    localStorage.setItem(getDraftCacheKey(), JSON.stringify(draftPayload));
+  }
+
+  function loadDraftCache() {
+    if (!currentStation || !currentModel) return;
+    let raw = localStorage.getItem(getDraftCacheKey());
+    
+    // [เพิ่มใหม่] ล้างช่องชื่อรอไว้เสมอ (ป้องกันข้อมูลขยะค้าง)
+    let elOp = document.getElementById("operator-name");
+    let elChk = document.getElementById("checker-name");
+    if(elOp) elOp.value = "";
+    if(elChk) elChk.value = "";
+
+    if (!raw) return;
+    
+    try {
+      let draft = JSON.parse(raw);
+      if (draft && draft.cycles && Array.isArray(draft.cycles)) {
+        draft.cycles.forEach((item, index) => {
+          let roundIndex = index + 1;
+          let elCt = document.getElementById(`cycletime-${roundIndex}`);
+          let elRm = document.getElementById(`remark-${roundIndex}`);
+          if (elCt) elCt.value = item.ct || "";
+          if (elRm) elRm.value = item.rm || "";
+        });
+        currentRound = draft.currentRound || 1;
+        
+        // [เพิ่มใหม่] นำชื่อกลับมาใส่ฟอร์ม
+        if (elOp && draft.operator) elOp.value = draft.operator;
+        if (elChk && draft.checker) elChk.value = draft.checker;
+
+        calculateAvg();
+      }
+    } catch(e) {
+      console.error("Failed to parse draft cache", e);
+    }
+  }
+
+  function clearDraftCache() {
+    if (!currentStation || !currentModel) return;
+    localStorage.removeItem(getDraftCacheKey());
+  }
+
+  function clearTableData() {
+    swalModern.fire({
+      title: 'Clear all entries?',
+      text: 'This will reset all recorded rounds and remarks for this station.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, Clear All',
+      customClass: { confirmButton: 'btn btn-danger px-4', cancelButton: 'btn btn-outline-secondary px-4' }
+    }).then((res) => {
+      if (res.isConfirmed) {
+        for (let i = 1; i <= 10; i++) {
+          let el = document.getElementById(`cycletime-${i}`);
+          if (el) el.value = "";
+          let rm = document.getElementById(`remark-${i}`);
+          if (rm) rm.value = "";
+        }
+        currentRound = 1;
+        resetStopwatch();
+        calculateAvg();
+        // [แก้ไข] เปลี่ยนเป็น save เพื่อเซฟชื่อทับลงไป แต่เวลากลายเป็นค่าว่าง แทนที่จะเคลียร์ลบหมด
+        saveDraftCache(); 
+        checkPullButtonVisibility(); // [แทรกตรงนี้] ถ้าล้างตารางแล้ว ให้ปุ่มโชว์กลับมาใหม่
+      }
+    });
+  }
+
+  let currentPullDataList = [];
+
+  // 1. ฟังก์ชันเช็คว่าจะซ่อนหรือโชว์ปุ่ม (ป้องกันการ Overwrite)
+  function checkPullButtonVisibility() {
+    let btn = document.getElementById("btn-pull-data");
+    if (!btn) return;
+
+    let hasData = false;
+    for (let i = 1; i <= 10; i++) {
+      let el = document.getElementById(`cycletime-${i}`);
+      if (el && parseFloat(el.value) > 0) {
+        hasData = true; break;
+      }
+    }
+
+    // ถ้าตารางมีตัวเลขอยู่แล้ว หรือ สถานีนี้เคยถูกเซฟลง Completed แล้ว -> ให้ซ่อนปุ่ม
+    if (hasData || completedStations.includes(currentStation)) {
+      btn.classList.add("d-none");
+    } else {
+      btn.classList.remove("d-none");
+    }
+  }
+
+  // 2. ฟังก์ชันเมื่อกดปุ่ม (โหลด Dropdown)
+  function promptPullData() {
+    swalModern.fire({ title: 'Searching available data...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    
+    google.script.run
+      .withSuccessHandler((list) => {
+        if (!list || list.length === 0) {
+           return swalModern.fire('Not Found', 'ไม่มีข้อมูลของสถานีนี้ใน Model หรือ Session อื่นๆ', 'info');
+        }
+        currentPullDataList = list;
+
+        // สร้าง Dropdown (<select>) โชว์รายการที่พบ
+        let optionsHtml = '<select id="swal-pull-select" class="form-select border-primary fw-bold text-primary mb-3">';
+        list.forEach((item, idx) => {
+           optionsHtml += `<option value="${idx}">[${item.model}] ${item.session} (Avg CT: ${item.totalCT}s)</option>`;
+        });
+        optionsHtml += '</select>';
+
+        swalModern.fire({
+           title: 'Pull Data from...',
+           html: `<div class="text-start mb-2 text-muted small fw-bold">Select source to copy 10-round data:</div>${optionsHtml}`,
+           showCancelButton: true,
+           confirmButtonText: '<i class="fa-solid fa-download"></i> Copy Data'
+        }).then((res) => {
+           if (res.isConfirmed) {
+              applyPullData(currentPullDataList[document.getElementById('swal-pull-select').value]);
+           }
+        });
+      })
+      .withFailureHandler(err => swalModern.fire('Error', err.message, 'error'))
+      .getAvailablePullData(currentStation, currentModel, currentSessionTag);
+  }
+
+  // 3. ฟังก์ชันนำข้อมูลมาหยอดใส่ฟอร์ม
+  function applyPullData(data) {
+    document.getElementById("operator-name").value = data.operator || "";
+    document.getElementById("checker-name").value = data.checker || "";
+
+    for (let i = 1; i <= 10; i++) {
+       let elCt = document.getElementById(`cycletime-${i}`);
+       let elRm = document.getElementById(`remark-${i}`);
+       if (elCt) elCt.value = data.r[i-1] !== "" ? data.r[i-1] : "";
+       if (elRm) elRm.value = data.remarks[i-1] || "";
+    }
+    currentRound = 11; // ดันรอบจับเวลาให้เต็ม
+    calculateAvg();
+    saveDraftCache();
+    checkPullButtonVisibility(); // ซ่อนปุ่มทันทีเพื่อกันกดซ้ำ
+    swalModern.fire({ icon: 'success', title: 'Data Copied', timer: 1500, showConfirmButton: false });
+  }
+
+  function backToMainLayout() { 
+    renderMainStations(); 
+    document.getElementById("section-sub-layout").classList.add("d-none"); 
+    document.getElementById("section-layout").classList.remove("d-none"); 
+  }
+
+  function backToSelectFromDashboard() { 
+    document.getElementById("dashboard-table-body").innerHTML = "";
+    document.getElementById("insight-metrics").classList.add("d-none");
+    if (webChartInstance) {
+      webChartInstance.destroy();
+      webChartInstance = null;
+    }
+    
+    document.getElementById("section-dashboard").classList.add("d-none"); 
+    
+    // [แก้ไข] เช็คว่าถ้ามาจาก Matrix ให้กลับไป Matrix
+    if (isNavigatedFromMatrix) {
+      document.getElementById("section-matrix").classList.remove("d-none"); 
+      isNavigatedFromMatrix = false; // รีเซ็ตสถานะ
+    } else {
+      // Fallback
+      document.getElementById("section-select").classList.remove("d-none"); 
+    }
+  }
+
+let currentMasterRouting = [];
+let editMasterOriginalModel = null;
+
+// แสดงปุ่มเมื่อเป็น Staff
+function checkMasterPermission() {
+   if (isStaffMode) document.getElementById('btn-master-management').classList.remove('d-none');
+}
+
+function openMasterManagement() {
+  document.getElementById("section-select").classList.add("d-none"); // แก้ไข: ซ่อนหน้า section-select
+  document.getElementById("section-master-data").classList.remove("d-none");
+  renderMasterDataTable();
+}
+
+function closeMasterManagement() {
+  document.getElementById("section-master-data").classList.add("d-none");
+  document.getElementById("section-select").classList.remove("d-none"); // แก้ไข: กลับไปแสดงหน้า section-select
+  loadInitialData(); // รีเฟรชข้อมูลหน้าแรก
+}
+
+function renderMasterDataTable() {
+  const tbody = document.getElementById("master-data-tbody");
+  // [แก้ไข] เปลี่ยน colspan="5" เป็น "4" เพื่อให้พอดีกับจำนวนคอลัมน์ที่เหลือ
+  tbody.innerHTML = `<tr><td colspan="4" class="text-muted py-4"><i class="fa-solid fa-spinner fa-spin me-2"></i>Loading Master Data...</td></tr>`;
+  
+  google.script.run.withSuccessHandler(data => {
+    allMasterDataList = data || [];
+    filterMasterDataTable(); // เรียกประมวลผลการกรองทันทีหลังดึงข้อมูลสำเร็จ
+  }).getMasterDataList();
+}
+
+// [เพิ่มใหม่] ฟังก์ชัน Real-time Filter สำหรับค้นหาชื่อ Model ในการ์ด Master Data
+function filterMasterDataTable() {
+  const searchInput = document.getElementById('master-search-input');
+  const clearBtn = document.getElementById('btn-clear-master-search');
+  const searchTerm = searchInput ? searchInput.value.trim().toUpperCase() : "";
+
+  // ควบคุมการแสดงผลปุ่มล้างคำค้นหา (X)
+  if (clearBtn) {
+    if (searchTerm !== "") {
+      clearBtn.classList.remove('d-none');
+    } else {
+      clearBtn.classList.add('d-none');
+    }
+  }
+
+  // กรองเฉพาะรายการที่ MODEL NAME ตรงกับคำค้นหา
+  const filteredData = allMasterDataList.filter(item => {
+    if (!searchTerm) return true;
+    return item.model && item.model.toString().toUpperCase().includes(searchTerm);
+  });
+
+  displayMasterDataTable(filteredData, searchTerm);
+}
+
+// [เพิ่มใหม่] ฟังก์ชันล้างค่าคำค้นหาเมื่อกดปุ่ม (X)
+function clearMasterSearch() {
+  const searchInput = document.getElementById('master-search-input');
+  if (searchInput) searchInput.value = "";
+  filterMasterDataTable();
+}
+
+// [เพิ่มใหม่] ฟังก์ชัน Render HTML ตาราง Master Data แยกจาก Logic เพื่อให้อ่านง่ายและไม่ซ้ำซ้อน
+function displayMasterDataTable(dataList, searchTerm = "") {
+  const tbody = document.getElementById("master-data-tbody");
+  tbody.innerHTML = "";
+
+  if (!dataList || dataList.length === 0) {
+    let msg = searchTerm 
+      ? `No master models found matching "${searchTerm}".`
+      : `No master data found.`;
+    // [แก้ไข] เปลี่ยน colspan="5" เป็น "4"
+    tbody.innerHTML = `<tr><td colspan="4" class="text-muted py-4">${msg}</td></tr>`;
+    return;
+  }
+
+  dataList.forEach(row => {
+    let routingHtml = "";
+    try {
+      let rJson = JSON.parse(row.routingStr || "[]");
+      rJson.forEach(main => {
+         let subCount = main.subs ? main.subs.length : 0;
+         routingHtml += `<span class="badge bg-primary bg-opacity-10 text-primary border border-primary me-1 mb-1 fw-normal px-2 py-1" style="border-radius:12px;">${main.name} <small class="text-muted ms-1">(${subCount} subs)</small></span>`;
+      });
+    } catch(e) {}
+
+    // [แก้ไข] ลบ <td class="text-muted"><span class="badge bg-light text-dark border">${row.line || '-'}</span></td> บรรทัดแรกทิ้งไป
+    tbody.innerHTML += `
+      <tr>
+        <td class="fw-bold text-primary fs-6">${row.model}</td>
+        <td class="fw-bold">${row.cavity} <small class="text-muted fw-normal">pcs/panel</small></td>
+        <td class="text-start ps-4" style="max-width: 400px; flex-wrap: wrap;">${routingHtml || '-'}</td>
+        <td>
+          <button class="btn btn-sm btn-warning text-dark fw-bold px-3 me-2 mb-1 rounded-pill shadow-sm" onclick="openMasterModal('${row.model}')">
+            <i class="fa-solid fa-pen"></i> Edit
+          </button>
+          <button class="btn btn-sm btn-info text-white fw-bold px-3 me-2 mb-1 rounded-pill shadow-sm" onclick="copyMasterData('${row.model}')">
+            <i class="fa-solid fa-copy"></i> Copy
+          </button>
+          <button class="btn btn-sm btn-danger text-white fw-bold px-3 mb-1 rounded-pill shadow-sm" onclick="deleteMasterData('${row.model}')">
+            <i class="fa-solid fa-trash"></i> Delete
+          </button>
+        </td>
+      </tr>`;
+  });
+}
+
+function openMasterModal(modelName = null) {
+  editMasterOriginalModel = modelName;
+  document.getElementById('masterModalTitle').textContent = modelName ? "Edit Master Model" : "Create New Master Model";
+  
+  if (modelName) {
+    // โหลดข้อมูลเก่ามาโชว์
+    swalModern.fire({ title: 'Loading...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    google.script.run.withSuccessHandler(data => {
+      let row = data.find(d => d.model === modelName);
+      if(row) {
+        // ❌ ลบบรรทัดนี้ออก: document.getElementById('master-line').value = row.line || "";
+        document.getElementById('master-model').value = row.model;
+        document.getElementById('master-cavity').value = row.cavity || 1;
+        try { currentMasterRouting = JSON.parse(row.routingStr || "[]"); } catch(e) { currentMasterRouting = []; }
+        renderMasterFormRouting();
+        Swal.close();
+        new bootstrap.Modal(document.getElementById('masterDataModal')).show();
+      }
+    }).getMasterDataList();
+  } else {
+    // สร้างใหม่
+    // ❌ ลบบรรทัดนี้ออก: document.getElementById('master-line').value = "";
+    document.getElementById('master-model').value = "";
+    document.getElementById('master-cavity').value = "1";
+    currentMasterRouting = [];
+    renderMasterFormRouting();
+    new bootstrap.Modal(document.getElementById('masterDataModal')).show();
+  }
+}
+
+// [เพิ่มใหม่] ฟังก์ชันคัดลอก Master Data
+function copyMasterData(modelName) {
+  editMasterOriginalModel = null; 
+  document.getElementById('masterModalTitle').textContent = "Copy Master Model (From: " + modelName + ")";
+  
+  swalModern.fire({ title: 'Loading...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  google.script.run.withSuccessHandler(data => {
+    let row = data.find(d => d.model === modelName);
+    if(row) {
+      // ❌ ลบบรรทัดนี้ออก: document.getElementById('master-line').value = row.line || "";
+      document.getElementById('master-model').value = row.model + "-COPY"; 
+      document.getElementById('master-cavity').value = row.cavity || 1;
+      try { currentMasterRouting = JSON.parse(row.routingStr || "[]"); } catch(e) { currentMasterRouting = []; }
+      renderMasterFormRouting();
+      Swal.close();
+      new bootstrap.Modal(document.getElementById('masterDataModal')).show();
+    }
+  }).getMasterDataList();
+}
+
+// [เพิ่มใหม่] ฟังก์ชันเลื่อน Main Station ขึ้น/ลง
+function masterMoveMain(idx, direction) {
+  if (direction === 'up' && idx > 0) {
+    let temp = currentMasterRouting[idx];
+    currentMasterRouting[idx] = currentMasterRouting[idx - 1];
+    currentMasterRouting[idx - 1] = temp;
+  } else if (direction === 'down' && idx < currentMasterRouting.length - 1) {
+    let temp = currentMasterRouting[idx];
+    currentMasterRouting[idx] = currentMasterRouting[idx + 1];
+    currentMasterRouting[idx + 1] = temp;
+  }
+  renderMasterFormRouting();
+}
+
+// [เพิ่มใหม่] ฟังก์ชันเลื่อน Sub Station ขึ้น/ลง
+function masterMoveSub(mainIdx, subIdx, direction) {
+  let subs = currentMasterRouting[mainIdx].subs;
+  if (direction === 'up' && subIdx > 0) {
+    let temp = subs[subIdx];
+    subs[subIdx] = subs[subIdx - 1];
+    subs[subIdx - 1] = temp;
+  } else if (direction === 'down' && subIdx < subs.length - 1) {
+    let temp = subs[subIdx];
+    subs[subIdx] = subs[subIdx + 1];
+    subs[subIdx + 1] = temp;
+  }
+  renderMasterFormRouting();
+}
+
+
+// --- Dynamic Form Logic ---
+function masterAddMain() {
+  // [แก้ไข] เปลี่ยนจาก "NEW MAIN PROCESS" เป็น "" (ค่าว่าง) เพื่อให้แสดงผลเป็น Placeholder
+  currentMasterRouting.push({ name: "", subs: [] });
+  renderMasterFormRouting();
+}
+function masterAddSub(mainIdx) {
+  // [แก้ไข] เปลี่ยนจาก "NEW SUB" เป็น "" (ค่าว่าง)
+  currentMasterRouting[mainIdx].subs.push({ name: "", unit: "Single", customDivisor: null });
+  renderMasterFormRouting();
+}
+function masterDelMain(mainIdx) { currentMasterRouting.splice(mainIdx, 1); renderMasterFormRouting(); }
+function masterDelSub(mainIdx, subIdx) { currentMasterRouting[mainIdx].subs.splice(subIdx, 1); renderMasterFormRouting(); }
+
+function renderMasterFormRouting() {
+  const container = document.getElementById("master-routing-container");
+  
+  // [Defensive] เคลียร์ SortableJS Instance เก่าทิ้ง ป้องกัน Memory Leak และบั๊กลากซ้อน
+  if(masterMainSortableInstance) { masterMainSortableInstance.destroy(); masterMainSortableInstance = null; }
+  masterSubSortableInstances.forEach(s => s.destroy());
+  masterSubSortableInstances = [];
+
+  let html = "";
+  currentMasterRouting.forEach((main, mIdx) => {
+    let subsHtml = `<div class="sub-routing-container" id="sub-container-${mIdx}">`;
+    main.subs.forEach((sub, sIdx) => {
+       let isCustom = sub.unit === 'Custom';
+       subsHtml += `
+       <!-- [แก้ไข] ใช้ compact-row จัดการให้อยู่บรรทัดเดียว และลบ margin ซ้ายให้เหลือพื้นที่มากขึ้น -->
+       <div class="compact-row ms-2 ms-md-4 mb-2 p-1 border rounded bg-white sub-item" data-idx="${sIdx}">
+          
+          <div class="text-muted px-1 flex-shrink-0" style="cursor: grab;" title="Drag to reorder"><i class="fa-solid fa-grip-vertical"></i></div>
+          <div class="btn-group btn-group-sm flex-shrink-0 me-1">
+            <button class="btn btn-light border px-1" onclick="masterMoveSub(${mIdx}, ${sIdx}, 'up')" ${sIdx === 0 ? 'disabled' : ''}><i class="fa-solid fa-arrow-up"></i></button>
+            <button class="btn btn-light border px-1" onclick="masterMoveSub(${mIdx}, ${sIdx}, 'down')" ${sIdx === main.subs.length - 1 ? 'disabled' : ''}><i class="fa-solid fa-arrow-down"></i></button>
+          </div>
+          
+          <!-- [แก้ไข] ใส่ Placeholder และคลาส compact-input -->
+          <input type="text" class="form-control form-control-sm compact-input fw-bold" value="${sub.name}" placeholder="NEW SUB" onchange="currentMasterRouting[${mIdx}].subs[${sIdx}].name = this.value.toUpperCase()">
+          
+          <select class="form-select form-select-sm compact-select text-secondary flex-shrink-0 ms-1" onchange="currentMasterRouting[${mIdx}].subs[${sIdx}].unit = this.value; renderMasterFormRouting();">
+            <option value="Single" ${sub.unit === 'Single' ? 'selected' : ''}>Single Piece</option>
+            <option value="Panel" ${sub.unit === 'Panel' ? 'selected' : ''}>Panel Flow</option>
+            <option value="Custom" ${isCustom ? 'selected' : ''}>Custom Divisor</option>
+          </select>
+          
+          <!-- [แก้ไข] ใส่คลาส compact-qty สำหรับช่องตัวเลข -->
+          <input type="number" class="form-control form-control-sm compact-qty border-primary text-primary flex-shrink-0 ms-1 ${isCustom ? '' : 'd-none'}" placeholder="Qty" min="1" value="${sub.customDivisor || ''}" onchange="currentMasterRouting[${mIdx}].subs[${sIdx}].customDivisor = parseInt(this.value)">
+          
+          <button class="btn btn-sm text-danger flex-shrink-0 ms-1 px-1" onclick="masterDelSub(${mIdx}, ${sIdx})"><i class="fa-solid fa-xmark"></i></button>
+       </div>`;
+    });
+    subsHtml += `</div>`; 
+
+    html += `
+    <div class="border rounded-4 bg-light p-2 mb-3 shadow-sm main-item" data-idx="${mIdx}">
+       <div class="compact-row mb-2">
+         
+         <div class="text-muted px-1 fs-6 flex-shrink-0" style="cursor: grab;" title="Drag to reorder"><i class="fa-solid fa-grip-vertical"></i></div>
+         <div class="btn-group btn-group-sm me-1 flex-shrink-0">
+           <button class="btn btn-white border bg-white px-1" onclick="masterMoveMain(${mIdx}, 'up')" ${mIdx === 0 ? 'disabled' : ''}><i class="fa-solid fa-arrow-up"></i></button>
+           <button class="btn btn-white border bg-white px-1" onclick="masterMoveMain(${mIdx}, 'down')" ${mIdx === currentMasterRouting.length - 1 ? 'disabled' : ''}><i class="fa-solid fa-arrow-down"></i></button>
+         </div>
+
+         <span class="badge bg-secondary rounded-circle p-2 flex-shrink-0 me-1">${mIdx + 1}</span>
+         
+         <!-- [แก้ไข] ใส่ Placeholder และคลาส compact-input -->
+         <input type="text" class="form-control compact-input fw-bold" value="${main.name}" placeholder="MAIN PROCESS" onchange="currentMasterRouting[${mIdx}].name = this.value.toUpperCase()">
+         
+         <!-- [เพิ่มใหม่] ช่องใส่ Supported Lines -->
+         <input type="text" class="form-control compact-input text-info border-info ms-1 flex-shrink-0" style="max-width: 150px;" value="${main.lines || ''}" placeholder="Lines (e.g. A1, A2)" title="Supported Lines separated by comma" onchange="let cleanVal = this.value.toUpperCase().replace(/[&/]/g, ','); this.value = cleanVal.split(',').map(s => s.trim()).filter(s => s).join(','); currentMasterRouting[${mIdx}].lines = this.value;">
+         
+         <button class="btn btn-sm btn-outline-primary px-2 rounded-pill fw-bold flex-shrink-0 ms-1" onclick="masterAddSub(${mIdx})">+ Sub</button>
+         <button class="btn btn-sm text-danger ms-auto flex-shrink-0 px-2" onclick="masterDelMain(${mIdx})"><i class="fa-solid fa-trash"></i></button>
+       </div>
+       ${subsHtml}
+    </div>`;
+  });
+  
+  // (โครงสร้าง SortableJS อิง Logic เดิม)
+  container.innerHTML = html || '<div class="text-center text-muted py-3">No routing sequence. Please add Main Station.</div>';
+
+  if (currentMasterRouting.length > 0) {
+    masterMainSortableInstance = new Sortable(container, {
+      animation: 150, handle: '.fa-grip-vertical', draggable: '.main-item', ghostClass: 'bg-white',
+      onEnd: function (evt) {
+        let movedItem = currentMasterRouting.splice(evt.oldIndex, 1)[0];
+        currentMasterRouting.splice(evt.newIndex, 0, movedItem);
+        renderMasterFormRouting();
+      }
+    });
+
+    currentMasterRouting.forEach((main, mIdx) => {
+      let subCont = document.getElementById(`sub-container-${mIdx}`);
+      if(subCont) {
+        let sSortable = new Sortable(subCont, {
+          animation: 150, handle: '.fa-grip-vertical', draggable: '.sub-item', ghostClass: 'bg-light',
+          onEnd: function (evt) {
+            let movedSub = currentMasterRouting[mIdx].subs.splice(evt.oldIndex, 1)[0];
+            currentMasterRouting[mIdx].subs.splice(evt.newIndex, 0, movedSub);
+            renderMasterFormRouting();
+          }
+        });
+        masterSubSortableInstances.push(sSortable);
+      }
+    });
+  }
+}
+
+function saveMasterData() {
+  // ❌ ลบบรรทัดนี้ออก: let line = document.getElementById('master-line').value.trim();
+  let model = document.getElementById('master-model').value.trim().toUpperCase();
+  let cavity = parseInt(document.getElementById('master-cavity').value) || 1;
+  
+  if(!model) return swalModern.fire('Error', 'Model Name is required!', 'error');
+
+  // [เพิ่มใหม่] บังคับให้ทุก Main Station ต้องระบุ Line (โค้ดเดิมที่คุณน่าจะมีอยู่แล้ว)
+  for (let i = 0; i < currentMasterRouting.length; i++) {
+    let m = currentMasterRouting[i];
+    if (!m.lines || m.lines.trim() === "") {
+      return swalModern.fire('Validation Error', `Please specify Supported Line(s) for Main Station: ${m.name || (i+1)}`, 'warning');
+    }
+  }
+
+  swalModern.fire({ title: 'Saving Master Data...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  let routingStr = JSON.stringify(currentMasterRouting);
+  
+  // สังเกตตรงพารามิเตอร์ที่ 2 (Line) เราส่งเป็น "-" Hardcode ไปเลยตามที่ออกแบบไว้
+  google.script.run.withSuccessHandler(res => {
+    if(res.success) {
+       swalModern.fire('Saved!', 'Master Data updated successfully.', 'success');
+       bootstrap.Modal.getInstance(document.getElementById('masterDataModal')).hide();
+       renderMasterDataTable();
+    } else {
+       swalModern.fire('Error', res.message, 'error');
+    }
+  }).saveMasterModelData(editMasterOriginalModel, "-", model, cavity, routingStr);
+}
+
+function deleteMasterData(modelName) {
+  swalModern.fire({
+    title: `Delete ${modelName}?`, text: "This will permanently remove the Master Data. You cannot undo this.", icon: 'warning',
+    showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Yes, Delete'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      swalModern.fire({ title: 'Deleting...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      google.script.run.withSuccessHandler(res => {
+         if(res.success) { swalModern.fire('Deleted!', '', 'success'); renderMasterDataTable(); }
+         else { swalModern.fire('Error', res.message, 'error'); }
+      }).deleteMasterModelData(modelName);
+    }
+  });
+}
+
+// เพิ่มบรรทัดนี้ไปในฟังก์ชันเช็ค Role เดิมของคุณเพื่อเปิดใช้งานปุ่ม
+// setTimeout(checkMasterPermission, 1500);
+function confirmGoHome() {
+    // 1. ตรวจสอบว่าผู้ใช้กำลังอยู่ในหน้าฟอร์มจับเวลาหรือไม่
+    const formSection = document.getElementById("section-form");
+    const isFormVisible = formSection && !formSection.classList.contains("d-none");
+    
+    if (isFormVisible) {
+      // กรณีที่ 1: กำลังจับเวลาอยู่ ให้แจ้งเตือนก่อน
+      swalModern.fire({
+        title: 'Discard Unsaved Data?',
+        text: 'You are currently in the Time Study Form. Returning to Home will discard your current unsaved progress.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Go Home',
+        cancelButtonText: 'Cancel',
+        customClass: { confirmButton: 'btn btn-danger px-4', cancelButton: 'btn btn-outline-secondary px-4' }
+      }).then((res) => {
+        if (res.isConfirmed) {
+          executeGoHome();
+        }
+      });
+    } else {
+      // กรณีที่ 2: อยู่หน้าอื่นๆ (หรือหน้าแรก) ให้กลับและรีเฟรชข้อมูลได้เลย
+      executeGoHome();
+    }
+  }
+
+  function executeGoHome() {
+    // 1. Defensive Check: เคลียร์ State ที่อาจค้างอยู่เพื่อป้องกันบั๊ก
+    if (isStopwatchRunning) {
+      resetStopwatch();
+    }
+    if (webChartInstance) {
+      webChartInstance.destroy(); // ป้องกัน Canvas Memory Leak
+      webChartInstance = null;
+    }
+    isNavigatedFromMatrix = false;
+
+    // 2. ปิดหน้าจอ (Section) ทั้งหมด ยกเว้นหน้าแรก
+    const sections = ["section-layout", "section-sub-layout", "section-form", "section-dashboard", "section-matrix", "section-master-data"];
+    sections.forEach(sec => {
+      let el = document.getElementById(sec);
+      if (el) el.classList.add("d-none");
+    });
+    
+    // 3. แสดงหน้าแรก (Selection)
+    document.getElementById("section-select").classList.remove("d-none");
+    
+    // 4. ล้างค่าในฟอร์มหน้าแรก
+    document.getElementById('session-name').value = '';
+    $('#model-select').val(null).trigger('change'); // ใช้ null เพื่อสั่งเคลียร์ค่า Select2 ให้หมดจด
+    $('#existing-session-select').val('').trigger('change');
+    
+    // 5. แสดงหน้า Loading รอการดึงข้อมูลใหม่
+    document.getElementById("config-ready").classList.add("d-none");
+    document.getElementById("loading-config").classList.remove("d-none");
+
+    // 6. เรียกฟังก์ชันดึงข้อมูลล่าสุดจาก Backend เสมอ
+    loadInitialData();
+  }
+</script>
+</body>
+</html>
