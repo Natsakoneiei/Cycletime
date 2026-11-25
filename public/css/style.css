@@ -1,0 +1,138 @@
+    /* [แก้ไขใหม่] ขยายความกว้าง Modal บน iPad ให้ใช้พื้นที่ 95% ของจอ */
+    @media (max-width: 992px) {
+      .modal-xl {
+        max-width: 95%;
+        margin: 1rem auto;
+      }
+    }
+    
+    /* [แก้ไขใหม่] CSS สำหรับบีบองค์ประกอบให้อยู่ในบรรทัดเดียว (Compact Single-Line) */
+    .compact-row {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: 0.25rem !important; /* ลดระยะห่างระหว่างชิ้นส่วน */
+    }
+    .compact-input {
+      min-width: 0; /* หัวใจสำคัญ: อนุญาตให้ Input ถูกบีบขนาดได้เมื่อจอเล็ก */
+      flex: 1 1 auto; /* ให้พื้นที่เหลือตกเป็นของช่องกรอกชื่อ */
+    }
+    .compact-select {
+      min-width: 0;
+      flex: 0 1 120px; /* ขนาดตั้งต้นของ Dropdown แต่ยอมให้บีบได้ */
+      padding-left: 0.25rem;
+      padding-right: 1.5rem;
+    }
+    .compact-qty {
+      min-width: 0;
+      flex: 0 1 65px; /* ขนาดตั้งต้นของช่องกรอกตัวเลข */
+      padding-left: 0.25rem;
+      padding-right: 0.25rem;
+      text-align: center;
+    }
+    /* [เพิ่มใหม่] CSS สำหรับ Horizontal Scroll ใน Modal Master Data */
+    .master-routing-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch; /* ทำให้ iOS/iPad ปัดหน้าจอได้ลื่นไหล */
+      padding-bottom: 12px;
+    }
+    .master-routing-scroll::-webkit-scrollbar {
+      height: 8px;
+    }
+    .master-routing-scroll::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 4px;
+    }
+    .master-routing-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .master-routing-scroll::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    :root { 
+      --bg-light: #f8fafc; --bg-card: #ffffff; --bg-input: #ffffff; --bg-hover: #f1f5f9; 
+      --text-main: #1e293b; --text-muted: #64748b; 
+      --primary: #2563eb; --primary-hover: #1d4ed8; --success: #10b981; 
+      --warning: #f59e0b; --danger: #ef4444; --info: #0ea5e9; --purple: #8b5cf6; 
+      --border-color: #e2e8f0; 
+    }
+    body { font-family: 'Inter', sans-serif; background-color: var(--bg-light); display: grid; place-items: center; margin: 0; min-height: 100vh; color: var(--text-main); }
+    .app-container { width: 100%; max-width: 1280px; min-height: 720px; margin: 30px auto; padding: 3rem; background: var(--bg-light); border-radius: 24px; position: relative; }
+    .fade-in { animation: fadeIn 0.4s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    /* [เพิ่มใหม่] CSS Animation สำหรับ Option A: Continuous Pulse */
+    .pace-pulse {
+      animation: pacePulse 3s ease-in-out infinite;
+      display: inline-block;
+    }
+    @keyframes pacePulse {
+      0%, 100% { opacity: 0.65; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.03); }
+    }
+
+    .header-title { font-weight: 800; font-size: 2.2rem; color: var(--primary); margin-bottom: 2.5rem; text-align: center; letter-spacing: -0.5px; }
+    .header-title i { color: var(--primary); }
+    .form-control, .form-select, .input-group-text { background-color: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 12px; padding: 0.75rem 1.2rem; transition: all 0.3s ease; font-weight: 500; }
+    .form-control::placeholder { color: #94a3b8; font-weight: 400; }
+    .form-control:focus, .form-select:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15); }
+    .select2-container--bootstrap-5 .select2-selection { background-color: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 12px; min-height: 48px; font-weight: 500; }
+    .btn { border-radius: 12px; font-weight: 600; padding: 0.6rem 1.5rem; transition: all 0.2s; border: none; }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+    .btn-primary { background-color: var(--primary); color: #fff;}
+    .btn-success { background-color: var(--success); color: #fff;}
+    .btn-danger { background-color: var(--danger); color: #fff;}
+    .btn-info { background-color: var(--info); color: #fff;}
+    .btn-dark { background-color: var(--text-main); color: #fff;}
+    .btn-outline-secondary { color: var(--text-muted); border-color: var(--border-color); background: var(--bg-card); border: 1px solid var(--border-color); }
+    .btn-outline-success { color: var(--success); border-color: var(--success); background: transparent; border: 1px solid var(--success); }
+    .btn-outline-danger { color: var(--danger); border-color: var(--danger); background: transparent; border: 1px solid var(--danger); }
+    .btn-gemini { background: linear-gradient(135deg, #10b981, #34d399); color: white; }
+    .modern-panel { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+    .card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px; margin-bottom: 1.5rem; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+    .card-header { font-weight: 700; border-bottom: 1px solid var(--border-color); padding: 1.25rem; background-color: var(--bg-light); color: var(--text-main); }
+    .card-body { padding: 1.5rem; }
+    .station-list { display: flex; flex-direction: column; gap: 12px; }
+    .station-item { display: flex; align-items: center; background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 16px 20px; transition: all 0.2s ease; position: relative; overflow: hidden; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05); }
+    .station-item::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; }
+    .station-item.machine::before { background-color: var(--primary); } 
+    .station-item.manual::before { background-color: var(--warning); }  
+    .station-item.completed {
+      background-color: #ecfdf5 !important;
+      border: 2px solid #10b981 !important;
+    }
+    .station-item.completed::before { background-color: #059669 !important; }
+    .station-item.completed .station-seq {
+      background-color: #d1fae5 !important;
+      color: #047857 !important;
+      border-color: #a7f3d0 !important;
+    }
+    .station-item:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+    .drag-handle { color: #cbd5e1; font-size: 1.2rem; padding-right: 15px; cursor: grab; transition: color 0.2s; }
+    .drag-handle:active { cursor: grabbing; color: var(--primary); }
+    .station-seq { width: 36px; height: 36px; background-color: var(--bg-hover); color: var(--primary); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; margin-right: 15px; border: 1px solid var(--border-color); }
+    .station-content { flex-grow: 1; display: flex; flex-direction: column; gap: 4px; }
+    .station-name { font-size: 1.2rem; font-weight: 700; color: var(--text-main); margin: 0; line-height: 1.2; }
+    .station-actions { display: flex; gap: 8px; align-items: center; }
+    .btn-icon { background: var(--bg-hover); border: 1px solid var(--border-color); border-radius: 10px; padding: 8px 12px; transition: 0.2s; color: var(--text-muted); }
+    .btn-icon.edit { color: var(--warning); } 
+    .btn-icon.enter { color: var(--primary); background: rgba(37, 99, 235, 0.1); } 
+    .btn-icon.del { color: var(--danger); background: rgba(239, 68, 68, 0.1); }
+    .add-btn { background-color: var(--bg-card); color: var(--text-muted); border: 2px dashed #cbd5e1; }
+    .table { color: var(--text-main); --bs-table-bg: transparent; --bs-table-color: var(--text-main); border-color: var(--border-color); margin-bottom: 0; }
+    .table-light { background-color: var(--bg-light) !important; color: var(--text-muted) !important; font-weight: 600; }
+    .table-inputs input.form-control { background-color: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; padding: 6px; text-align: center; }
+    .total-ct-box { background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(37, 99, 235, 0.2)); border: 1px solid rgba(37, 99, 235, 0.3); }
+    #stopwatch-display { font-variant-numeric: tabular-nums; letter-spacing: 2px; font-size: 4rem; font-weight: 800; color: var(--primary); }
+    .chart-container { position: relative; width: 100%; height: 350px; }
+    .swal2-popup { border-radius: 20px !important; font-family: 'Inter', sans-serif; }
+    .swal2-title { color: var(--text-main) !important; font-weight: 700; }
+    @media (max-width: 992px) {
+      .app-container { margin: 10px auto !important; padding: 1.25rem !important; }
+      .header-title { font-size: 1.75rem !important; margin-bottom: 1.5rem !important; }
+      #stopwatch-display { font-size: 2.8rem !important; }
+      .station-item { padding: 12px 15px !important; }
+      .drag-handle { touch-action: none; }
+    }

@@ -1,22 +1,22 @@
 require('dotenv').config();
 const express = require('express');
-const mysql = require('mysql2/promise');
-const ExcelJS = require('exceljs');
+const helmet = require('helmet');
+const compression = require('compression');
 const path = require('path');
 
+const pool = require('./config/db');
+const { generateDashboardExcel, generateMatrixExcel } = require('./services/excelService');
+
+// ตรวจสอบว่าตั้งค่า .env ครบก่อนสตาร์ทเซิร์ฟเวอร์ (ไม่ใช้รหัสผ่านสำรองในโค้ด)
+
 const app = express();
+
+// เพิ่ม Security Headers (ปิด CSP ชั่วคราวเพราะ index.html ยังใช้ inline script และ CDN)
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || '127.0.0.1',
-  port: process.env.DB_PORT || 3306,
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || 'rootpassword',
-  database: process.env.DB_NAME || 'cycletime_db',
-  waitForConnections: true,
-  connectionLimit: 10
-});
 
 const parseJsonSafe = (val, fallback = []) => {
   if (!val) return fallback;
@@ -129,12 +129,12 @@ app.post('/api/master', async (req, res) => {
   try {
     const { oldModelName, line, model, cavity, routingStr } = req.body;
     const searchModel = (oldModelName || model).trim().toUpperCase();
-    const [existing] = await pool.query('SELECT id FROM config_master WHERE UPPER(model) = ?', [searchModel]);
+    const [existing] = await pool.query('SELECT id FROM config_master WHERE model = ?', [searchModel]);
 
     if (existing.length > 0) {
       await pool.query('UPDATE config_master SET line = ?, model = ?, cavity = ?, routing_json = ?, timestamp = NOW() WHERE id = ?', [line, model, cavity, routingStr, existing[0].id]);
     } else {
-      const [dup] = await pool.query('SELECT id FROM config_master WHERE UPPER(model) = ?', [model.trim().toUpperCase()]);
+      const [dup] = await pool.query('SELECT id FROM config_master WHERE model = ?', [model.trim().toUpperCase()]);
       if (dup.length > 0) return res.json({ success: false, message: 'Model Name already exists!' });
       await pool.query('INSERT INTO config_master (line, model, cavity, routing_json) VALUES (?, ?, ?, ?)', [line, model, cavity, routingStr]);
     }
@@ -146,7 +146,7 @@ app.post('/api/master', async (req, res) => {
 
 app.delete('/api/master/:modelName', async (req, res) => {
   try {
-    const [result] = await pool.query('DELETE FROM config_master WHERE UPPER(model) = ?', [req.params.modelName.trim().toUpperCase()]);
+    const [result] = await pool.query('DELETE FROM config_master WHERE model = ?', [req.params.modelName.trim().toUpperCase()]);
     if (result.affectedRows > 0) return res.json({ success: true });
     res.json({ success: false, message: 'Model not found.' });
   } catch (err) {
@@ -159,8 +159,8 @@ app.get('/api/completed-stations', async (req, res) => {
   try {
     const { model, sessionTag } = req.query;
     const [rows] = await pool.query(
-      'SELECT DISTINCT station FROM log_time_study WHERE LOWER(model) = ? AND LOWER(session_tag) = ? AND station IS NOT NULL',
-      [(model || '').trim().toLowerCase(), (sessionTag || '').trim().toLowerCase()]
+      'SELECT DISTINCT station FROM log_time_study WHERE model = ? AND session_tag = ? AND station IS NOT NULL',
+      [(model || '').trim(), (sessionTag || '').trim()]
     );
     res.json(rows.map(r => r.station.trim()));
   } catch (err) {
@@ -459,74 +459,44 @@ app.get('/api/matrix', async (req, res) => {
 // 10. Export Excel (Dashboard & Matrix)
 app.post('/api/export/dashboard', async (req, res) => {
   try {
-    const { data, model, line } = req.body;
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet('Dashboard Data');
-
-    let maxRounds = 10;
-    (data || []).forEach(item => {
-      if (item.allRounds && item.allRounds.length > maxRounds) maxRounds = item.allRounds.length;
-    });
-
-    let headers = ['Main Station', 'Sub Station', 'Operator', 'Checker', 'Average CT (s)'];
-    for (let i = 1; i <= maxRounds; i++) headers.push('R' + i);
-
-    const headerRow = sheet.addRow(headers);
-    headerRow.eachCell(cell => {
-      cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563EB' } };
-    });
-
-    (data || []).forEach(item => {
-      let row = [item.mainStation, item.subStation, item.operator, item.checker, item.total];
-      for (let i = 0; i < maxRounds; i++) {
-        row.push((item.allRounds && i < item.allRounds.length) ? item.allRounds[i] : '');
-      }
-      sheet.addRow(row);
-    });
-
-    const buffer = await workbook.xlsx.writeBuffer();
-    res.json({
-      success: true,
-      filename: `TimeStudy_${model}_${line}_${Date.now()}.xlsx`,
-      base64: Buffer.from(buffer).toString('base64')
-    });
+    await generateDashboardExcel(res, req.body);
   } catch (err) {
-    res.json({ success: false, message: err.message });
+    console.error('Export Dashboard Error:', err);
+    res.status(500).json({ success: false, message: 'Export failed' });
   }
 });
 
 app.post('/api/export/matrix', async (req, res) => {
   try {
-    const { data } = req.body;
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet('Summary Filtered Data');
-
-    const headers = ['Date', 'Model', 'Session', 'Station', 'Line', 'Operator', 'Checker', 'Avg CT (s)', 'R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9', 'R10'];
-    const headerRow = sheet.addRow(headers);
-    headerRow.eachCell(cell => {
-      cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF10B981' } };
-    });
-
-    (data || []).forEach(item => {
-      sheet.addRow([
-        item.timestamp, item.model, item.session, item.station,
-        item.line || '-', item.operator || '-', item.checker || '-', item.avgCT,
-        item.r1, item.r2, item.r3, item.r4, item.r5, item.r6, item.r7, item.r8, item.r9, item.r10
-      ]);
-    });
-
-    const buffer = await workbook.xlsx.writeBuffer();
-    res.json({
-      success: true,
-      filename: `SummaryMatrix_${Date.now()}.xlsx`,
-      base64: Buffer.from(buffer).toString('base64')
-    });
+    await generateMatrixExcel(res, req.body);
   } catch (err) {
-    res.json({ success: false, message: err.message });
+    console.error('Export Matrix Error:', err);
+    res.status(500).json({ success: false, message: 'Export failed' });
+  }
+});
+
+
+
+// Health Check Endpoint สำหรับทีม IT / Docker / Monitoring
+app.get('/health', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ status: 'ok', database: 'connected' });
+  } catch (err) {
+    res.status(500).json({ status: 'error', database: 'disconnected' });
   }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+const server = app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+
+// ปิดการเชื่อมต่อ Database อย่างปลอดภัยเมื่อสั่งหยุด Server
+const shutdown = async () => {
+  console.log('Shutting down server...');
+  server.close(async () => {
+    await pool.end();
+    process.exit(0);
+  });
+};
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
